@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, MoreHorizontal, Send, Download, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -12,6 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { generateQuotationPDF } from '@/lib/pdfGenerator';
+import { toast } from 'sonner';
 import type { Quotation } from '@/types/quotation';
 
 interface QuotationTableProps {
@@ -108,7 +109,10 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
                         <Send className="mr-2 h-4 w-4" />
                         Send to Client
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        generateQuotationPDF(quotation);
+                        toast.success('PDF downloaded successfully');
+                      }}>
                         <Download className="mr-2 h-4 w-4" />
                         Download PDF
                       </DropdownMenuItem>

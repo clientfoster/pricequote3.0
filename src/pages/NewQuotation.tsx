@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Send } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Send, Download } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem } from '@/types/quotation';
+import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from '@/types/quotation';
+import { generateQuotationPDF } from '@/lib/pdfGenerator';
 import { toast } from 'sonner';
 
 interface FormLineItem extends Omit<LineItem, 'id'> {
@@ -106,6 +107,46 @@ export default function NewQuotation() {
     }, 1000);
   };
 
+  const handleDownloadPDF = () => {
+    if (!clientName || !companyName) {
+      toast.error('Please fill in client details first');
+      return;
+    }
+
+    const quotation: Quotation = {
+      id: `temp-${Date.now()}`,
+      quoteNumber: `QT-${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+      header: {
+        clientName,
+        companyName,
+        quoteDate: new Date(quoteDate),
+        validUntil: new Date(validUntil),
+        contactNumber,
+        email: email || undefined,
+      },
+      lineItems: lineItems.map((item) => ({
+        id: item.id,
+        service: item.service,
+        description: item.description,
+        price: item.price,
+        isFree: item.isFree,
+      })),
+      totals: {
+        subtotal,
+        gst: gstAmount,
+        gstRate,
+        totalPayable,
+      },
+      status: 'draft',
+      createdBy: 'current-user',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    generateQuotationPDF(quotation);
+    toast.success('PDF downloaded successfully');
+  };
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -124,6 +165,10 @@ export default function NewQuotation() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={handleDownloadPDF}>
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
               <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
                 <Save className="w-4 h-4" />
                 Save Draft

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Send, Download, Check, ArrowUp, ArrowDown, Search, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Send, Download, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,35 +9,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from '@/types/quotation';
 import { generateQuotationPDF, getQuotationPDFBlob } from '@/lib/pdfGenerator';
 import { toast } from 'sonner';
 import api from '@/lib/api'; // Added API import
-import { TAX_ID_NAME_BY_COUNTRY, TAX_ID_NAME_OPTIONS } from '@/data/taxIdCatalog';
 
 interface FormLineItem extends Omit<LineItem, 'id'> {
   id: string;
 }
 
-interface Client {
-  _id: string;
-  name: string;
-  companyName: string;
-  email?: string;
-  contactNumber?: string;
-  address?: string;
-  country?: string;
-  taxIdName?: string;
-  taxIdValue?: string;
-  gstin?: string;
-}
-
 const ensureBullets = (text: string) => {
   const trimmed = text.trim();
   if (!trimmed) return '';
-  if (trimmed.startsWith('•')) return text;
+  if (trimmed.startsWith('- ')) return text;
   return `• ${text.replace(/\n+/g, '\n• ')}`;
 };
 
@@ -55,10 +40,7 @@ const CURRENCY_OPTIONS = [
 const COMMON_TAX_ID_TYPES = ['GSTIN', 'VAT', 'EIN', 'TIN'];
 const OTHER_TAX_ID_OPTION = '__OTHER__';
 
-const TAX_ID_TYPE_OPTIONS = [
-  ...COMMON_TAX_ID_TYPES,
-  ...TAX_ID_NAME_OPTIONS.filter((item) => !COMMON_TAX_ID_TYPES.includes(item)),
-];
+const TAX_ID_TYPE_OPTIONS = [...COMMON_TAX_ID_TYPES];
 
 const createQuoteNumber = () =>
   `QT-${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
@@ -101,6 +83,8 @@ export default function NewQuotation() {
   const [gstRate, setGstRate] = useState(18);
   const [includeTax, setIncludeTax] = useState(false);
   const [taxRate, setTaxRate] = useState(10);
+  const [showTaxSection, setShowTaxSection] = useState(true);
+  const [showServicesSection, setShowServicesSection] = useState(true);
   const [includeCompanyName, setIncludeCompanyName] = useState(true);
   const [includeGstin, setIncludeGstin] = useState(true);
   const [includeCin, setIncludeCin] = useState(true);
@@ -108,11 +92,6 @@ export default function NewQuotation() {
   const [currency, setCurrency] = useState('INR');
   const [exchangeRate, setExchangeRate] = useState<number | null>(1);
   const [isRateLoading, setIsRateLoading] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isClientsLoading, setIsClientsLoading] = useState(true);
-  const [clientSearch, setClientSearch] = useState('');
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [showClientResults, setShowClientResults] = useState(false);
   const issuerLogoInputRef = useRef<HTMLInputElement | null>(null);
   const clientLogoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -189,7 +168,7 @@ export default function NewQuotation() {
   const handleDescriptionFocus = (id: string, e: React.FocusEvent<HTMLTextAreaElement>) => {
     const value = e.currentTarget.value;
     if (value.trim().length === 0) {
-      const nextValue = '• ';
+      const nextValue = '- ';
       updateLineItem(id, 'description', nextValue);
       requestAnimationFrame(() => {
         e.currentTarget.selectionStart = nextValue.length;
@@ -251,10 +230,6 @@ export default function NewQuotation() {
   };
 
   const handleSend = async () => {
-    if (includeClientDetails && (!clientName || !companyName || !contactNumber)) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
       return;
@@ -383,10 +358,6 @@ export default function NewQuotation() {
   };
 
   const handleDownloadPDF = () => {
-    if (includeClientDetails && (!clientName || !companyName)) {
-      toast.error('Please fill in client details first');
-      return;
-    }
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
       return;
@@ -465,20 +436,6 @@ export default function NewQuotation() {
   };
 
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const { data } = await api.get('/clients');
-        setClients(data);
-      } catch (error: any) {
-        toast.error('Failed to fetch clients');
-      } finally {
-        setIsClientsLoading(false);
-      }
-    };
-    fetchClients();
-  }, []);
-
-  useEffect(() => {
     let ignore = false;
     const fetchRate = async () => {
       if (currency === 'INR') {
@@ -506,21 +463,10 @@ export default function NewQuotation() {
     };
   }, [currency]);
 
-  const filteredClients = clients.filter((client) => {
-    const query = clientSearch.trim().toLowerCase();
-    if (query.length < 2) return false;
-    return (
-      client.name.toLowerCase().includes(query) ||
-      client.companyName.toLowerCase().includes(query) ||
-      (client.email || '').toLowerCase().includes(query) ||
-      (client.contactNumber || '').toLowerCase().includes(query)
-    );
-  });
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-muted/20">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -553,16 +499,34 @@ export default function NewQuotation() {
       </header>
 
       {/* Content */}
-      <div className="px-6 lg:px-8 py-6">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <div className="px-6 py-6 lg:px-8">
+        <div className="mx-auto max-w-6xl space-y-6">
           {/* Company Details */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="py-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-3 space-y-2">
-                  <Label htmlFor="issuerCompanyName">
-                    Company Name <span className="text-destructive">*</span>
+          <Card className="border-primary/20 bg-primary/5 shadow-sm">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="includeCompanyDetails"
+                  checked={includeCompanyName || includeGstin || includeCin}
+                  onCheckedChange={(checked) => {
+                    const next = checked === true;
+                    setIncludeCompanyName(next);
+                    setIncludeGstin(next);
+                    setIncludeCin(next);
+                  }}
+                />
+                <CardTitle>
+                  <Label htmlFor="includeCompanyDetails" className="cursor-pointer">
+                    Company Details
                   </Label>
+                </CardTitle>
+              </div>
+            </CardHeader>
+            {(includeCompanyName || includeGstin || includeCin) && (
+            <CardContent className="py-4 space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                <div className="md:col-span-3 space-y-2">
+                  <Label htmlFor="issuerCompanyName">Company Name</Label>
                   <Input
                     id="issuerCompanyName"
                     placeholder="Enter company name"
@@ -600,7 +564,7 @@ export default function NewQuotation() {
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
                   )}
-                  <p className="text-xs text-muted-foreground">GST, VAT, EIN or local business tax number</p>
+                  <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                 </div>
                 <div className="md:col-span-2 space-y-2">
                   <Label htmlFor="quoteDate">Quote Date</Label>
@@ -621,9 +585,7 @@ export default function NewQuotation() {
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="quoteNumber">
-                    Quotation No <span className="text-destructive">*</span>
-                  </Label>
+                  <Label htmlFor="quoteNumber">Quotation No</Label>
                   <Input
                     id="quoteNumber"
                     value={quoteNumber}
@@ -648,13 +610,14 @@ export default function NewQuotation() {
                 )}
               </div>
             </CardContent>
+            )}
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Left Column - Form */}
             <div className="lg:col-span-2 space-y-6">
               {/* Client Details */}
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
@@ -669,78 +632,6 @@ export default function NewQuotation() {
                         </Label>
                       </CardTitle>
                     </div>
-                    {includeClientDetails && (
-                      <div className="relative w-[320px]">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            placeholder="Search client by name, company, email..."
-                            value={clientSearch}
-                            onChange={(e) => {
-                              setClientSearch(e.target.value);
-                              setShowClientResults(true);
-                            }}
-                            className="pl-9"
-                          />
-                        </div>
-
-                        {showClientResults && clientSearch.trim().length >= 2 && (
-                          <div className="absolute z-20 mt-2 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
-                            <Command>
-                              <CommandList>
-                                <CommandEmpty>
-                                  {isClientsLoading ? 'Loading clients...' : 'No clients found.'}
-                                </CommandEmpty>
-                                <CommandGroup>
-                                  {filteredClients.map((client) => (
-                                    <CommandItem
-                                      key={client._id}
-                                      value={`${client.name} ${client.companyName} ${client.email || ''} ${client.contactNumber || ''}`}
-                                      onSelect={() => {
-                                        setSelectedClientId(client._id);
-                                        setClientName(client.name);
-                                        setCompanyName(client.companyName);
-                                        setEmail(client.email || '');
-                                        setContactNumber(client.contactNumber || '');
-                                        setClientAddress(client.address || '');
-                                        const nextCountry = client.country || '';
-                                        const nextTaxIdName = client.taxIdName || (nextCountry ? TAX_ID_NAME_BY_COUNTRY[nextCountry] || '' : '');
-                                        setCountry(nextCountry);
-                                        setTaxIdName(nextTaxIdName);
-                                        setClientTaxIdCustomType('');
-                                        setTaxIdValue(client.taxIdValue || client.gstin || '');
-                                        setClientSearch(client.name);
-                                        setShowClientResults(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={`mr-2 h-4 w-4 ${selectedClientId === client._id ? 'opacity-100' : 'opacity-0'}`}
-                                      />
-                                      <div className="flex flex-col">
-                                        <span className="text-sm">{client.name}</span>
-                                        <span className="text-xs text-muted-foreground">{client.companyName}</span>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                  {selectedClientId && (
-                                    <CommandItem
-                                      value="__clear__"
-                                      onSelect={() => {
-                                        setSelectedClientId(null);
-                                        setClientSearch('');
-                                        setShowClientResults(true);
-                                      }}
-                                    >
-                                      Clear selection
-                                    </CommandItem>
-                                  )}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                   <CardDescription>Enter the client information for this quotation.</CardDescription>
                 </CardHeader>
@@ -748,9 +639,7 @@ export default function NewQuotation() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="clientName">
-                          Client Name <span className="text-destructive">*</span>
-                        </Label>
+                        <Label htmlFor="clientName">Client Name</Label>
                         <Input
                           id="clientName"
                           placeholder="Enter client name"
@@ -759,9 +648,7 @@ export default function NewQuotation() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="companyName">
-                          Company Name <span className="text-destructive">*</span>
-                        </Label>
+                        <Label htmlFor="companyName">Company Name</Label>
                         <Input
                           id="companyName"
                           placeholder="Enter company name"
@@ -770,9 +657,7 @@ export default function NewQuotation() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="contactNumber">
-                          Contact Number <span className="text-destructive">*</span>
-                        </Label>
+                        <Label htmlFor="contactNumber">Contact Number</Label>
                         <Input
                           id="contactNumber"
                           placeholder="+91 XXXXX XXXXX"
@@ -824,7 +709,7 @@ export default function NewQuotation() {
                             onChange={(e) => setClientTaxIdCustomType(e.target.value)}
                           />
                         )}
-                        <p className="text-xs text-muted-foreground">GST, VAT, EIN or local business tax number</p>
+                        <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="clientReferenceNo">Client PO / Reference No.</Label>
@@ -868,11 +753,27 @@ export default function NewQuotation() {
               </Card>
 
               {/* Tax (Optional) */}
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
-                  <CardTitle>Taxes (Optional)</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="showTaxSection"
+                      checked={showTaxSection}
+                      onCheckedChange={(checked) => {
+                        const next = checked === true;
+                        setShowTaxSection(next);
+                        if (!next) setIncludeTax(false);
+                      }}
+                    />
+                    <CardTitle>
+                      <Label htmlFor="showTaxSection" className="cursor-pointer">
+                        Taxes (Optional)
+                      </Label>
+                    </CardTitle>
+                  </div>
                   <CardDescription>Enable tax for countries that don't use GST.</CardDescription>
                 </CardHeader>
+                {showTaxSection && (
                 <CardContent className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -903,14 +804,26 @@ export default function NewQuotation() {
                     <span className="text-sm text-muted-foreground">%</span>
                   </div>
                 </CardContent>
+                )}
               </Card>
 
               {/* Line Items */}
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="showServicesSection"
+                        checked={showServicesSection}
+                        onCheckedChange={(checked) => setShowServicesSection(checked === true)}
+                      />
+                      <CardTitle>
+                        <Label htmlFor="showServicesSection" className="cursor-pointer">
+                          Services & Pricing
+                        </Label>
+                      </CardTitle>
+                    </div>
                     <div>
-                      <CardTitle>Services & Pricing</CardTitle>
                       <CardDescription>Add the services you're quoting for.</CardDescription>
                     </div>
                     <Button variant="outline" size="sm" onClick={addLineItem}>
@@ -919,11 +832,12 @@ export default function NewQuotation() {
                     </Button>
                   </div>
                 </CardHeader>
+                {showServicesSection && (
                 <CardContent className="space-y-4">
                   {lineItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4 animate-fade-in"
+                      className="animate-fade-in space-y-4 rounded-lg border border-border bg-background p-4 shadow-sm"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-muted-foreground">
@@ -972,7 +886,7 @@ export default function NewQuotation() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Price (₹)</Label>
+                          <Label>Price (INR)</Label>
                           <Input
                             type="number"
                             placeholder="0"
@@ -996,7 +910,7 @@ export default function NewQuotation() {
                             rows={3}
                           />
                           <p className="text-xs text-muted-foreground">
-                            Tip: Just press Enter for the next bullet.
+                            Tip: Press Enter for the next bullet.
                           </p>
                         </div>
                         <div className="md:col-span-2 flex items-center gap-2">
@@ -1015,13 +929,14 @@ export default function NewQuotation() {
                     </div>
                   ))}
                 </CardContent>
+                )}
               </Card>
             </div>
 
             {/* Right Column - Summary */}
             <div className="space-y-6">
               {/* Pricing Summary */}
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 shadow-sm">
                 <CardHeader>
                   <CardTitle>Summary</CardTitle>
                 </CardHeader>
@@ -1106,10 +1021,10 @@ export default function NewQuotation() {
 
                   {/* Terms */}
                   <div className="pt-4 space-y-2 text-xs text-muted-foreground">
-                    <p>• Timeline: {COMPANY_INFO.timeline}</p>
-                    <p>• {COMPANY_INFO.paymentTerms}</p>
-                    <p>• Bank: {COMPANY_INFO.bankName}</p>
-                    <p>• IFSC: {COMPANY_INFO.ifsc}</p>
+                    <p>- Timeline: {COMPANY_INFO.timeline}</p>
+                    <p>- {COMPANY_INFO.paymentTerms}</p>
+                    <p>- Bank: {COMPANY_INFO.bankName}</p>
+                    <p>- IFSC: {COMPANY_INFO.ifsc}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1120,3 +1035,6 @@ export default function NewQuotation() {
     </div>
   );
 }
+
+
+

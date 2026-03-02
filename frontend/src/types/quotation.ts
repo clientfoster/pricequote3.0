@@ -39,7 +39,6 @@ export interface Quotation {
   exchangeRate?: number; // currency per 1 INR
   includeCompanyName?: boolean;
   includeGstin?: boolean;
-  includeCin?: boolean;
   includeClientDetails?: boolean;
   status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
   pdfUrl?: string; // Added from backend
@@ -58,7 +57,6 @@ export type QuotationStatus = Quotation['status'];
 export const COMPANY_INFO = {
   name: 'Semixon Technologies Private Limited',
   gstin: '29ABQCS8084G1ZI',
-  cin: 'U58200TS2025PTC201438',
   bankName: 'YES BANK',
   ifsc: 'YESB0000476',
   timeline: '4-7 working days',

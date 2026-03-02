@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Send, Download, ArrowUp, ArrowDown, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ const ensureBullets = (text: string) => {
   const trimmed = text.trim();
   if (!trimmed) return '';
   if (trimmed.startsWith('- ')) return text;
-  return `• ${text.replace(/\n+/g, '\n• ')}`;
+  return `- ${text.replace(/\n+/g, '\n- ')}`;
 };
 
 const CURRENCY_OPTIONS = [
@@ -56,6 +56,7 @@ const toDataUrl = (file: File): Promise<string> =>
 export default function NewQuotation() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uxMode, setUxMode] = useState<'outside' | 'inline'>('outside');
 
   // Form state
   const [quoteNumber, setQuoteNumber] = useState(createQuoteNumber);
@@ -87,13 +88,15 @@ export default function NewQuotation() {
   const [showServicesSection, setShowServicesSection] = useState(true);
   const [includeCompanyName, setIncludeCompanyName] = useState(true);
   const [includeGstin, setIncludeGstin] = useState(true);
-  const [includeCin, setIncludeCin] = useState(true);
   const [includeClientDetails, setIncludeClientDetails] = useState(true);
   const [currency, setCurrency] = useState('INR');
   const [exchangeRate, setExchangeRate] = useState<number | null>(1);
   const [isRateLoading, setIsRateLoading] = useState(false);
   const issuerLogoInputRef = useRef<HTMLInputElement | null>(null);
   const clientLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const isInlineLabels = uxMode === 'inline';
+  const fieldSpaceClass = isInlineLabels ? 'space-y-1' : 'space-y-2';
+  const gridGapClass = isInlineLabels ? 'gap-3' : 'gap-4';
 
   // Line items with default items
   const [lineItems, setLineItems] = useState<FormLineItem[]>(
@@ -154,7 +157,7 @@ export default function NewQuotation() {
     const after = value.slice(start);
 
     e.preventDefault();
-    const insert = `\n• `;
+    const insert = `\n- `;
     const nextValue = `${before}${insert}${after}`;
     updateLineItem(id, 'description', nextValue);
 
@@ -192,6 +195,16 @@ export default function NewQuotation() {
       currency,
       minimumFractionDigits: 0,
     }).format(converted);
+  };
+
+  const toBillingAmount = (amountInInr: number) => {
+    if (currency === 'INR') return amountInInr;
+    return amountInInr * (exchangeRate || 1);
+  };
+
+  const toBaseInrAmount = (amountInCurrency: number) => {
+    if (currency === 'INR') return amountInCurrency;
+    return exchangeRate ? amountInCurrency / exchangeRate : 0;
   };
 
   const uploadFileToCloudinary = async (file: File): Promise<string> => {
@@ -264,7 +277,6 @@ export default function NewQuotation() {
         validUntil: new Date(apiPayload.validUntil),
         includeCompanyName: apiPayload.includeCompanyName,
         includeGstin: apiPayload.includeGstin,
-        includeCin: apiPayload.includeCin,
         includeClientDetails: apiPayload.includeClientDetails,
         currency: apiPayload.currency,
         exchangeRate: apiPayload.exchangeRate,
@@ -351,7 +363,6 @@ export default function NewQuotation() {
       exchangeRate: exchangeRate || 1,
       includeCompanyName,
       includeGstin,
-      includeCin,
       includeClientDetails,
       status
     };
@@ -401,8 +412,7 @@ export default function NewQuotation() {
       exchangeRate: exchangeRate || 1,
       includeCompanyName,
       includeGstin,
-      includeCin,
-      includeClientDetails,
+        includeClientDetails,
       status: 'draft',
       createdBy: 'current-user',
       createdAt: new Date(),
@@ -464,34 +474,51 @@ export default function NewQuotation() {
   }, [currency]);
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-display font-bold text-foreground">New Quotation</h1>
+                <h1 className="text-xl font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Create a new quotation for your client.
+                  Professional quotation builder for public users.
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">No login required. Fill details and download instantly.</p>
+                <div className="mt-3 inline-flex rounded-md border border-border bg-background p-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={uxMode === 'outside' ? 'default' : 'ghost'}
+                    className="h-8"
+                    onClick={() => setUxMode('outside')}
+                  >
+                    Outside Labels
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={uxMode === 'inline' ? 'default' : 'ghost'}
+                    className="h-8"
+                    onClick={() => setUxMode('inline')}
+                  >
+                    Inline Labels
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleDownloadPDF}>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:w-auto">
+              <Button className="w-full" variant="outline" onClick={handleDownloadPDF}>
                 <Download className="w-4 h-4" />
                 Download PDF
               </Button>
-              <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+              <Button className="w-full" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
                 <Save className="w-4 h-4" />
                 Save Draft
-              </Button>
-              <Button variant="accent" onClick={handleSend} disabled={isSubmitting}>
-                <Send className="w-4 h-4" />
-                Send Quotation
               </Button>
             </div>
           </div>
@@ -499,22 +526,21 @@ export default function NewQuotation() {
       </header>
 
       {/* Content */}
-      <div className="px-6 py-6 lg:px-8">
-        <div className="mx-auto max-w-6xl space-y-6">
+      <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mx-auto max-w-7xl space-y-6">
           {/* Company Details */}
           <Card className="border-primary/20 bg-primary/5 shadow-sm">
             <CardHeader className="pb-0">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="includeCompanyDetails"
-                  checked={includeCompanyName || includeGstin || includeCin}
-                  onCheckedChange={(checked) => {
-                    const next = checked === true;
-                    setIncludeCompanyName(next);
-                    setIncludeGstin(next);
-                    setIncludeCin(next);
-                  }}
-                />
+                    checked={includeCompanyName || includeGstin}
+                    onCheckedChange={(checked) => {
+                      const next = checked === true;
+                      setIncludeCompanyName(next);
+                      setIncludeGstin(next);
+                    }}
+                  />
                 <CardTitle>
                   <Label htmlFor="includeCompanyDetails" className="cursor-pointer">
                     Company Details
@@ -522,24 +548,24 @@ export default function NewQuotation() {
                 </CardTitle>
               </div>
             </CardHeader>
-            {(includeCompanyName || includeGstin || includeCin) && (
+            {(includeCompanyName || includeGstin) && (
             <CardContent className="py-4 space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                <div className="md:col-span-3 space-y-2">
-                  <Label htmlFor="issuerCompanyName">Company Name</Label>
+              <div className={`grid grid-cols-1 md:grid-cols-12 ${gridGapClass}`}>
+                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label htmlFor="issuerCompanyName">Company Name</Label>}
                   <Input
                     id="issuerCompanyName"
-                    placeholder="Enter company name"
+                    placeholder={isInlineLabels ? 'Company Name' : 'Enter company name'}
                     value={issuerCompanyName}
                     onChange={(e) => setIssuerCompanyName(e.target.value)}
                   />
                 </div>
-                <div className="md:col-span-3 space-y-2">
-                  <Label>Primary Tax ID</Label>
-                  <div className="flex gap-2">
+                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label>Primary Tax ID</Label>}
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Select value={issuerTaxIdType || '__EMPTY__'} onValueChange={(value) => setIssuerTaxIdType(value === '__EMPTY__' ? '' : value)}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Select Tax ID Type" />
+                      <SelectTrigger className="w-full sm:w-[160px]">
+                        <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
@@ -552,7 +578,7 @@ export default function NewQuotation() {
                       </SelectContent>
                     </Select>
                     <Input
-                      placeholder="Enter Tax ID Number"
+                      placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
                       value={issuerTaxIdValue}
                       onChange={(e) => setIssuerTaxIdValue(e.target.value)}
                     />
@@ -564,10 +590,12 @@ export default function NewQuotation() {
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
                   )}
-                  <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
+                  {!isInlineLabels && (
+                    <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
+                  )}
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="quoteDate">Quote Date</Label>
+                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label htmlFor="quoteDate">Quote Date</Label>}
                   <Input
                     id="quoteDate"
                     type="date"
@@ -575,8 +603,8 @@ export default function NewQuotation() {
                     onChange={(e) => setQuoteDate(e.target.value)}
                   />
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="validUntil">Valid Till</Label>
+                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label htmlFor="validUntil">Valid Till</Label>}
                   <Input
                     id="validUntil"
                     type="date"
@@ -584,10 +612,11 @@ export default function NewQuotation() {
                     onChange={(e) => setValidUntil(e.target.value)}
                   />
                 </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="quoteNumber">Quotation No</Label>
+                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label htmlFor="quoteNumber">Quotation No</Label>}
                   <Input
                     id="quoteNumber"
+                    placeholder={isInlineLabels ? 'Quotation No' : undefined}
                     value={quoteNumber}
                     onChange={(e) => setQuoteNumber(e.target.value)}
                   />
@@ -597,7 +626,7 @@ export default function NewQuotation() {
                 <input
                   ref={issuerLogoInputRef}
                   type="file"
-                  accept="image/png,image/jpeg,image/jpg"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
                   className="hidden"
                   onChange={handleIssuerLogoSelect}
                 />
@@ -633,57 +662,57 @@ export default function NewQuotation() {
                       </CardTitle>
                     </div>
                   </div>
-                  <CardDescription>Enter the client information for this quotation.</CardDescription>
+                  {!isInlineLabels && <CardDescription>Enter the client information for this quotation.</CardDescription>}
                 </CardHeader>
                 {includeClientDetails && (
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="clientName">Client Name</Label>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 ${gridGapClass}`}>
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="clientName">Client Name</Label>}
                         <Input
                           id="clientName"
-                          placeholder="Enter client name"
+                          placeholder={isInlineLabels ? 'Client Name' : 'Enter client name'}
                           value={clientName}
                           onChange={(e) => setClientName(e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="companyName">Company Name</Label>
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="companyName">Company Name</Label>}
                         <Input
                           id="companyName"
-                          placeholder="Enter company name"
+                          placeholder={isInlineLabels ? 'Company Name' : 'Enter company name'}
                           value={companyName}
                           onChange={(e) => setCompanyName(e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contactNumber">Contact Number</Label>
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="contactNumber">Contact Number</Label>}
                         <Input
                           id="contactNumber"
-                          placeholder="+91 XXXXX XXXXX"
+                          placeholder={isInlineLabels ? 'Contact Number' : '+91 XXXXX XXXXX'}
                           value={contactNumber}
                           onChange={(e) => setContactNumber(e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="email">Email</Label>}
                         <Input
                           id="email"
                           type="email"
-                          placeholder="client@company.com"
+                          placeholder={isInlineLabels ? 'Email' : 'client@company.com'}
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="taxIdName">Primary Tax ID Name</Label>
-                        <div className="flex gap-2">
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="taxIdName">Primary Tax ID Name</Label>}
+                        <div className="flex flex-col gap-2 sm:flex-row">
                           <Select
                             value={taxIdName || '__EMPTY__'}
                             onValueChange={(value) => setTaxIdName(value === '__EMPTY__' ? '' : value)}
                           >
-                            <SelectTrigger id="taxIdName" className="w-[140px]">
-                              <SelectValue placeholder="Select Tax ID Type" />
+                            <SelectTrigger id="taxIdName" className="w-full sm:w-[160px]">
+                              <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
@@ -697,7 +726,7 @@ export default function NewQuotation() {
                           </Select>
                           <Input
                             id="taxIdValue"
-                            placeholder="Enter Tax ID Number"
+                            placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
                             value={taxIdValue}
                             onChange={(e) => setTaxIdValue(e.target.value)}
                           />
@@ -709,31 +738,34 @@ export default function NewQuotation() {
                             onChange={(e) => setClientTaxIdCustomType(e.target.value)}
                           />
                         )}
-                        <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
+                        {!isInlineLabels && (
+                          <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
+                        )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="clientReferenceNo">Client PO / Reference No.</Label>
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="clientReferenceNo">Client PO / Reference No.</Label>}
                         <Input
                           id="clientReferenceNo"
-                          placeholder="Optional – provided by client if available"
+                          placeholder={isInlineLabels ? 'Client PO / Reference No.' : 'Optional - provided by client if available'}
                           value={clientReferenceNo}
                           onChange={(e) => setClientReferenceNo(e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="clientAddress">Client Address</Label>
-                        <Input
+                      <div className={`${fieldSpaceClass} md:col-span-2`}>
+                        {!isInlineLabels && <Label htmlFor="clientAddress">Client Address</Label>}
+                        <Textarea
                           id="clientAddress"
-                          placeholder="Enter client address"
+                          placeholder={isInlineLabels ? 'Client Address' : 'Enter client address'}
                           value={clientAddress}
                           onChange={(e) => setClientAddress(e.target.value)}
+                          rows={3}
                         />
                       </div>
-                      <div className="md:col-span-2 flex justify-end">
+                      <div className="md:col-span-2 flex justify-start md:justify-end">
                         <input
                           ref={clientLogoInputRef}
                           type="file"
-                          accept="image/png,image/jpeg,image/jpg"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
                           className="hidden"
                           onChange={handleClientLogoSelect}
                         />
@@ -790,13 +822,16 @@ export default function NewQuotation() {
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="taxRate" className="text-sm text-muted-foreground">
-                      Tax
-                    </Label>
+                    {!isInlineLabels && (
+                      <Label htmlFor="taxRate" className="text-sm text-muted-foreground">
+                        Tax
+                      </Label>
+                    )}
                     <Input
                       id="taxRate"
                       type="number"
                       className="w-20"
+                      placeholder={isInlineLabels ? 'Tax %' : undefined}
                       value={taxRate}
                       onChange={(e) => setTaxRate(parseInt(e.target.value) || 0)}
                       disabled={!includeTax}
@@ -810,7 +845,7 @@ export default function NewQuotation() {
               {/* Line Items */}
               <Card className="shadow-sm">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="showServicesSection"
@@ -823,10 +858,12 @@ export default function NewQuotation() {
                         </Label>
                       </CardTitle>
                     </div>
-                    <div>
-                      <CardDescription>Add the services you're quoting for.</CardDescription>
+                    <div className="order-3 sm:order-2 sm:flex-1">
+                      <CardDescription>
+                        Add billable services with clear descriptions and rates. Totals update instantly.
+                      </CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={addLineItem}>
+                    <Button className="order-2 w-full sm:order-3 sm:w-auto" variant="outline" size="sm" onClick={addLineItem}>
                       <Plus className="w-4 h-4" />
                       Add Item
                     </Button>
@@ -837,12 +874,19 @@ export default function NewQuotation() {
                   {lineItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className="animate-fade-in space-y-4 rounded-lg border border-border bg-background p-4 shadow-sm"
+                      className="animate-fade-in space-y-4 rounded-xl border border-border/70 bg-background/95 p-4 shadow-sm ring-1 ring-transparent transition hover:ring-border"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Item #{index + 1}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Line {index + 1}
+                          </span>
+                          {item.service && (
+                            <span className="text-sm font-medium text-foreground truncate max-w-[180px]">
+                              {item.service}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
@@ -878,30 +922,51 @@ export default function NewQuotation() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Service Name</Label>
+                          {!isInlineLabels && <Label>Service Name</Label>}
+                          {isInlineLabels && item.service && (
+                            <p className="text-xs text-muted-foreground">Service Name</p>
+                          )}
                           <Input
-                            placeholder="e.g., Website Design"
+                            placeholder={isInlineLabels ? 'Service Name' : 'e.g., Website Design'}
                             value={item.service}
                             onChange={(e) => updateLineItem(item.id, 'service', e.target.value)}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Price (INR)</Label>
+                          {!isInlineLabels && <Label>{`Amount (${currency})`}</Label>}
+                          {isInlineLabels && (item.isFree || item.price > 0) && (
+                            <p className="text-xs text-muted-foreground">{`Amount (${currency})`}</p>
+                          )}
                           <Input
                             type="number"
-                            placeholder="0"
-                            value={item.isFree ? '' : item.price || ''}
+                            placeholder={
+                              currency !== 'INR' && exchangeRate === null
+                                ? 'Rate loading...'
+                                : isInlineLabels
+                                  ? `Amount (${currency})`
+                                  : '0'
+                            }
+                            value={item.isFree ? '' : (currency !== 'INR' && exchangeRate !== null
+                              ? Math.round(toBillingAmount(item.price))
+                              : item.price || '')}
                             onChange={(e) =>
-                              updateLineItem(item.id, 'price', parseInt(e.target.value) || 0)
+                              updateLineItem(
+                                item.id,
+                                'price',
+                                Math.round(toBaseInrAmount(parseFloat(e.target.value) || 0))
+                              )
                             }
                             onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                            disabled={item.isFree}
+                            disabled={item.isFree || (currency !== 'INR' && exchangeRate === null)}
                           />
                         </div>
                         <div className="md:col-span-2 space-y-2">
-                          <Label>Description</Label>
+                          {!isInlineLabels && <Label>Description</Label>}
+                          {isInlineLabels && item.description && (
+                            <p className="text-xs text-muted-foreground">Description</p>
+                          )}
                           <Textarea
-                            placeholder={"Add details (auto-bulleted):\n• "}
+                            placeholder={isInlineLabels ? 'Description' : "Add details (auto-bulleted):\n- "}
                             value={item.description}
                             onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
                             onFocus={(e) => handleDescriptionFocus(item.id, e)}
@@ -922,7 +987,7 @@ export default function NewQuotation() {
                             }
                           />
                           <Label htmlFor={`free-${item.id}`} className="text-sm cursor-pointer">
-                            Mark as FREE (complimentary service)
+                            Mark as complimentary (no charge)
                           </Label>
                         </div>
                       </div>
@@ -936,9 +1001,10 @@ export default function NewQuotation() {
             {/* Right Column - Summary */}
             <div className="space-y-6">
               {/* Pricing Summary */}
-              <Card className="sticky top-24 shadow-sm">
+              <Card className="shadow-sm xl:sticky xl:top-24">
                 <CardHeader>
-                  <CardTitle>Summary</CardTitle>
+                  <CardTitle>Pricing Summary</CardTitle>
+                  <CardDescription>Client-facing totals are shown in the selected billing currency.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Line items list */}
@@ -961,7 +1027,9 @@ export default function NewQuotation() {
 
                   {/* Currency */}
                   <div className="flex items-center justify-between gap-4">
-                    <Label className="text-sm text-muted-foreground">Currency</Label>
+                    {!isInlineLabels && (
+                      <Label className="text-sm text-muted-foreground">Billing Currency</Label>
+                    )}
                     <Select value={currency} onValueChange={setCurrency}>
                       <SelectTrigger className="h-8 w-[170px] text-sm">
                         <SelectValue placeholder="Select currency" />
@@ -975,14 +1043,8 @@ export default function NewQuotation() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {currency !== 'INR' && (
-                    <div className="text-xs text-muted-foreground">
-                      {isRateLoading
-                        ? 'Fetching exchange rate...'
-                        : exchangeRate === null
-                          ? 'Exchange rate unavailable'
-                          : `Rate: 1 INR = ${exchangeRate.toFixed(4)} ${currency}`}
-                    </div>
+                  {currency !== 'INR' && isRateLoading && (
+                    <div className="text-xs text-muted-foreground">Fetching exchange rate...</div>
                   )}
 
                   <Separator />
@@ -1035,6 +1097,7 @@ export default function NewQuotation() {
     </div>
   );
 }
+
 
 
 

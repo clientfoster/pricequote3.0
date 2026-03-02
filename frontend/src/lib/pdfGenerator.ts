@@ -43,7 +43,6 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   let yPos = 0;
   const includeCompanyName = quotation.includeCompanyName !== false;
   const includeGstin = quotation.includeGstin !== false;
-  const includeCin = quotation.includeCin !== false;
   const includeClientDetails = quotation.includeClientDetails !== false;
 
   // --- Helper Functions ---
@@ -93,7 +92,7 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   yPos += 15;
 
   // Company Address/Info
-  const hasCompanyInfo = includeCompanyName || includeGstin || includeCin;
+  const hasCompanyInfo = includeCompanyName || includeGstin;
   if (hasCompanyInfo) {
     addText('FROM:', margin, yPos, 8, 'bold', COLORS.text);
     yPos += 5;
@@ -106,10 +105,6 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     const issuerTaxType = quotation.issuerTaxIdType || 'GSTIN';
     const issuerTaxValue = quotation.issuerTaxIdValue || COMPANY_INFO.gstin;
     addText(`${issuerTaxType}: ${issuerTaxValue}`, margin, yPos, 8);
-    yPos += 4;
-  }
-  if (includeCin) {
-    addText(`CIN: ${COMPANY_INFO.cin}`, margin, yPos, 8);
     yPos += 4;
   }
   yPos += hasCompanyInfo ? 8 : 2; // Spacer
@@ -181,7 +176,7 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
 
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Service', 'Description', 'Amount']],
+    head: [['#', 'Service', 'Description', `Amount (${quotation.currency || 'INR'})`]],
     body: tableData,
     margin: { left: margin, right: margin },
     headStyles: {
@@ -223,9 +218,13 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   };
 
   addTotalRow('Subtotal:', formatCurrency(quotation.subtotal, quotation.currency || 'INR', quotation.exchangeRate || 1));
-  addTotalRow(`GST (${quotation.gstRate}%):`, formatCurrency(quotation.gst, quotation.currency || 'INR', quotation.exchangeRate || 1));
-  if (typeof quotation.tax === 'number' && quotation.tax > 0) {
-    addTotalRow(`Tax (${quotation.taxRate || 0}%):`, formatCurrency(quotation.tax, quotation.currency || 'INR', quotation.exchangeRate || 1));
+  const hasTax = typeof quotation.tax === 'number' && quotation.tax > 0;
+  if (!hasTax) {
+    addTotalRow(`GST (${quotation.gstRate}%):`, formatCurrency(quotation.gst, quotation.currency || 'INR', quotation.exchangeRate || 1));
+  }
+  if (hasTax) {
+    const taxLabel = quotation.taxIdName || 'Tax';
+    addTotalRow(`${taxLabel} (${quotation.taxRate || 0}%):`, formatCurrency(quotation.tax, quotation.currency || 'INR', quotation.exchangeRate || 1));
   }
 
   // Divider
@@ -237,17 +236,13 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   addTotalRow('Total Payable:', formatCurrency(quotation.totalPayable, quotation.currency || 'INR', quotation.exchangeRate || 1), true);
 
   // --- Footer Content (Terms & Bank) ---
-  // Using yPos from where Table ended (left side) instead of pushing down if table is short
-  // But safer to verify yPos vs page height
-  let footerContentY = (doc as any).lastAutoTable.finalY + 10;
-  if (footerContentY < pageHeight - 100) {
-    footerContentY = pageHeight - 100; // Push to bottom if plenty of space
-  } else {
-    footerContentY += 40; // Add space if table was long
+  let footerContentY = yPos + 10;
+  const footerBlockHeight = 42;
+  if (footerContentY + footerBlockHeight > pageHeight - 20) {
+    doc.addPage();
+    footerContentY = 20;
   }
 
-  // Ensure strict page break logic isn't needed for this simple redesign unless table is huge.
-  // Setup Bank Details
   doc.setDrawColor(...COLORS.lightGray);
   doc.line(margin, footerContentY, pageWidth - margin, footerContentY);
   footerContentY += 10;
@@ -260,12 +255,12 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   addText('Terms & Conditions', margin, termY, 9, 'bold', COLORS.primary);
   termY += 5;
   const terms = [
-    `• Timeline: ${COMPANY_INFO.timeline}`,
-    `• ${COMPANY_INFO.paymentTerms}`,
-    '• Validity: 15 days from issue date',
-    '• Prices subject to change post-validity',
+    `- Timeline: ${COMPANY_INFO.timeline}`,
+    `- ${COMPANY_INFO.paymentTerms}`,
+    '- Validity: 15 days from issue date',
+    '- Prices subject to change post-validity',
   ];
-  terms.forEach(term => {
+  terms.forEach((term) => {
     addText(term, margin, termY, 8, 'normal', COLORS.text);
     termY += 4;
   });

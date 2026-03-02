@@ -107,8 +107,10 @@ export default function QuotationDetails() {
                             <table className="w-full text-sm">
                                 <thead className="bg-muted/50">
                                     <tr>
-                                        <th className="text-left py-3 px-4 font-medium">Service</th>
-                                        <th className="text-right py-3 px-4 font-medium">Price</th>
+                                <th className="text-left py-3 px-4 font-medium">Service</th>
+                                <th className="text-right py-3 px-4 font-medium">
+                                    Amount ({quotation.currency || 'INR'})
+                                </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
@@ -132,7 +134,7 @@ export default function QuotationDetails() {
                 {/* Right Col: Totals */}
                 <Card className="h-fit">
                     <CardHeader>
-                        <CardTitle>Payment Summary</CardTitle>
+                        <CardTitle>Pricing Summary</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex justify-between text-sm">

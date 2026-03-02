@@ -30,11 +30,11 @@ const ProtectedRoute = ({ role }: { role?: 'SuperAdmin' | 'Employee' }) => {
   if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/quote" replace />;
   }
 
   if (role && user.role !== role) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
@@ -56,14 +56,16 @@ const App = () => (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             {/* Public Routes */}
+            <Route path="/" element={<Navigate to="/quote" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/setup-password/:token" element={<SetupPassword />} />
+            <Route path="/quote" element={<NewQuotation />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<LayoutWrapper />}>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/employee/:userId/dashboard" element={<EmployeeDashboard />} />
                 <Route path="/employee/:userId/profile" element={<Settings />} />
                 <Route path="/quotations" element={<QuotationList />} />

@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const from = (location.state as { from?: string } | null)?.from || '/dashboard';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await login(email, password);
-            navigate('/');
+            navigate(from, { replace: true });
         } catch (error) {
             // Error handled in context
         }

@@ -27,7 +27,6 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
 
   const isActive = (path: string) => {
-    if (path === '/' && location.pathname !== '/') return false;
     // For employee dashboard strict match
     if (path.includes('/dashboard') && location.pathname === path) return true;
     return location.pathname.startsWith(path);
@@ -37,7 +36,7 @@ export function AppSidebar() {
     const items = [
       {
         title: 'Dashboard',
-        href: user?.role === 'Employee' ? `/employee/${user?._id}/dashboard` : '/',
+        href: user?.role === 'Employee' ? `/employee/${user?._id}/dashboard` : '/dashboard',
         icon: LayoutDashboard
       },
       { title: 'Quotations', href: '/quotations', icon: FileText },

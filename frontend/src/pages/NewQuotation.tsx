@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from 
 import { generateQuotationPDF, getQuotationPDFBlob } from '@/lib/pdfGenerator';
 import { toast } from 'sonner';
 import api from '@/lib/api'; // Added API import
+import { useAuth } from '@/context/AuthContext';
 
 interface FormLineItem extends Omit<LineItem, 'id'> {
   id: string;
@@ -55,8 +56,11 @@ const toDataUrl = (file: File): Promise<string> =>
 
 export default function NewQuotation() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uxMode, setUxMode] = useState<'outside' | 'inline'>('outside');
+  const isPublicQuote = location.pathname === '/quote';
 
   // Form state
   const [quoteNumber, setQuoteNumber] = useState(createQuoteNumber);
@@ -476,19 +480,21 @@ export default function NewQuotation() {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-10 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-xl font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
                 <p className="text-sm text-muted-foreground mt-1">
                   Professional quotation builder for public users.
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">No login required. Fill details and download instantly.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  No login required. Fill details and download instantly.
+                </p>
                 <div className="mt-3 inline-flex rounded-md border border-border bg-background p-1">
                   <Button
                     type="button"
@@ -511,15 +517,22 @@ export default function NewQuotation() {
                 </div>
               </div>
             </div>
-            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:w-auto">
-              <Button className="w-full" variant="outline" onClick={handleDownloadPDF}>
-                <Download className="w-4 h-4" />
-                Download PDF
-              </Button>
-              <Button className="w-full" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-                <Save className="w-4 h-4" />
-                Save Draft
-              </Button>
+            <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 lg:w-auto">
+              {isPublicQuote && (
+                <Button size="sm" variant="secondary" onClick={() => navigate('/login', { state: { from: '/dashboard' } })}>
+                  Login
+                </Button>
+              )}
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button className="w-full sm:w-auto" variant="outline" onClick={handleDownloadPDF}>
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </Button>
+                <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                  <Save className="w-4 h-4" />
+                  Save Draft
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -529,11 +542,11 @@ export default function NewQuotation() {
       <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Company Details */}
-          <Card className="border-primary/20 bg-primary/5 shadow-sm">
-            <CardHeader className="pb-0">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="includeCompanyDetails"
+            <Card className="border-primary/20 bg-primary/5 shadow-sm">
+              <CardHeader className="border-b border-primary/10 bg-background/60">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="includeCompanyDetails"
                     checked={includeCompanyName || includeGstin}
                     onCheckedChange={(checked) => {
                       const next = checked === true;
@@ -647,7 +660,7 @@ export default function NewQuotation() {
             <div className="lg:col-span-2 space-y-6">
               {/* Client Details */}
               <Card className="shadow-sm">
-                <CardHeader>
+                <CardHeader className="border-b border-border/60 bg-muted/30">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -786,7 +799,7 @@ export default function NewQuotation() {
 
               {/* Tax (Optional) */}
               <Card className="shadow-sm">
-                <CardHeader>
+                <CardHeader className="border-b border-border/60 bg-muted/30">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="showTaxSection"
@@ -844,7 +857,7 @@ export default function NewQuotation() {
 
               {/* Line Items */}
               <Card className="shadow-sm">
-                <CardHeader>
+                <CardHeader className="border-b border-border/60 bg-muted/30">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -1002,7 +1015,7 @@ export default function NewQuotation() {
             <div className="space-y-6">
               {/* Pricing Summary */}
               <Card className="shadow-sm xl:sticky xl:top-24">
-                <CardHeader>
+                <CardHeader className="border-b border-border/60 bg-muted/30">
                   <CardTitle>Pricing Summary</CardTitle>
                   <CardDescription>Client-facing totals are shown in the selected billing currency.</CardDescription>
                 </CardHeader>

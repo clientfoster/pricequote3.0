@@ -86,6 +86,14 @@ export default function QuotationDetails() {
                                     <p className="text-foreground">{quotation.clientName}</p>
                                     <p className="text-muted-foreground">{quotation.companyName}</p>
                                     <p className="text-muted-foreground">{quotation.email}</p>
+                                    {quotation.clientReferenceNo && <p className="text-muted-foreground">Reference: {quotation.clientReferenceNo}</p>}
+                                    {quotation.clientAddress && <p className="text-muted-foreground">Address: {quotation.clientAddress}</p>}
+                                    {quotation.country && <p className="text-muted-foreground">Country: {quotation.country}</p>}
+                                    {(quotation.taxIdName || quotation.taxIdValue) && (
+                                        <p className="text-muted-foreground">
+                                            {(quotation.taxIdName || 'Tax ID')}: {quotation.taxIdValue || '-'}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                             <div>

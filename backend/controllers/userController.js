@@ -4,13 +4,16 @@ const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const generateToken = require('../utils/generateToken');
 
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+
 // @desc    Invite a new user
 // @route   POST /api/users/invite
 // @access  Private/SuperAdmin
 const inviteUser = asyncHandler(async (req, res) => {
     const { name, email, role } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
         res.status(400);
@@ -23,7 +26,7 @@ const inviteUser = asyncHandler(async (req, res) => {
 
     const user = await User.create({
         name,
-        email,
+        email: normalizedEmail,
         role: role || 'Employee',
         invitationToken,
         invitationExpires,
@@ -97,7 +100,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
     if (user) {
         user.name = req.body.name || user.name;
-        user.email = req.body.email || user.email;
+        user.email = req.body.email ? normalizeEmail(req.body.email) : user.email;
         if (req.body.password) {
             user.password = req.body.password;
         }

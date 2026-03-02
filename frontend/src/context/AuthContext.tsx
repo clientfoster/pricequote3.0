@@ -35,12 +35,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (email: string, password: string) => {
         try {
-            const { data } = await api.post('/auth/login', { email, password });
+            const normalizedEmail = email.trim().toLowerCase();
+            const { data } = await api.post('/auth/login', { email: normalizedEmail, password });
             setUser(data);
             localStorage.setItem('userInfo', JSON.stringify(data));
             toast.success('Login successful');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Login failed');
+            const message =
+                error.response?.data?.message ||
+                (error.request ? 'Cannot reach backend API. Check backend server/CORS.' : 'Login failed');
+            toast.error(message);
             throw error;
         }
     };

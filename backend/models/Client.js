@@ -11,6 +11,9 @@ const clientSchema = mongoose.Schema({
     email: { type: String },
     contactNumber: { type: String },
     address: { type: String },
+    country: { type: String },
+    taxIdName: { type: String },
+    taxIdValue: { type: String },
     gstin: { type: String },
 }, {
     timestamps: true,

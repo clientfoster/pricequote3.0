@@ -2,13 +2,16 @@ const asyncHandler = require('express-async-handler');
 const generateToken = require('../utils/generateToken');
 const User = require('../models/User');
 
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (user && (await user.matchPassword(password))) {
         res.json({
@@ -62,6 +65,7 @@ const acceptInvite = asyncHandler(async (req, res) => {
 // @access  Public
 const setupSuperAdmin = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     // Check if any SuperAdmin exists
     const adminExists = await User.findOne({ role: 'SuperAdmin' });
@@ -73,7 +77,7 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
 
     const user = await User.create({
         name,
-        email,
+        email: normalizedEmail,
         password,
         role: 'SuperAdmin',
         isVerified: true, // Auto verify since they are setting it up

@@ -9,10 +9,20 @@ const axios = require('axios');
 const createQuotation = asyncHandler(async (req, res) => {
     const {
         quoteNumber,
+        issuerCompanyName,
+        issuerTaxIdType,
+        issuerTaxIdValue,
+        issuerLogoUrl,
         clientName,
         companyName,
         contactNumber,
         email,
+        clientReferenceNo,
+        clientAddress,
+        clientLogoUrl,
+        country,
+        taxIdName,
+        taxIdValue,
         quoteDate,
         validUntil,
         lineItems,
@@ -35,10 +45,20 @@ const createQuotation = asyncHandler(async (req, res) => {
     const quotation = new Quotation({
         user: req.user._id,
         quoteNumber,
+        issuerCompanyName,
+        issuerTaxIdType,
+        issuerTaxIdValue,
+        issuerLogoUrl,
         clientName,
         companyName,
         contactNumber,
         email,
+        clientReferenceNo,
+        clientAddress,
+        clientLogoUrl,
+        country,
+        taxIdName,
+        taxIdValue,
         quoteDate,
         validUntil,
         lineItems,
@@ -81,6 +101,11 @@ const createQuotation = asyncHandler(async (req, res) => {
                 companyName: companyName,
                 email: email,
                 contactNumber: contactNumber,
+                address: clientAddress,
+                country: country,
+                taxIdName: taxIdName,
+                taxIdValue: taxIdValue,
+                gstin: taxIdValue,
                 // address? gstin? Not in quotation body usually.
             });
             console.log(`Auto-added new client: ${clientName}`);
@@ -188,6 +213,16 @@ const updateQuotation = asyncHandler(async (req, res) => {
         companyName,
         contactNumber,
         email,
+        issuerCompanyName,
+        issuerTaxIdType,
+        issuerTaxIdValue,
+        issuerLogoUrl,
+        clientReferenceNo,
+        clientAddress,
+        clientLogoUrl,
+        country,
+        taxIdName,
+        taxIdValue,
         quoteDate,
         validUntil,
         lineItems,
@@ -205,6 +240,16 @@ const updateQuotation = asyncHandler(async (req, res) => {
         quotation.companyName = companyName;
         quotation.contactNumber = contactNumber;
         quotation.email = email;
+        if (typeof issuerCompanyName === 'string') quotation.issuerCompanyName = issuerCompanyName;
+        if (typeof issuerTaxIdType === 'string') quotation.issuerTaxIdType = issuerTaxIdType;
+        if (typeof issuerTaxIdValue === 'string') quotation.issuerTaxIdValue = issuerTaxIdValue;
+        if (typeof issuerLogoUrl === 'string') quotation.issuerLogoUrl = issuerLogoUrl;
+        if (typeof clientReferenceNo === 'string') quotation.clientReferenceNo = clientReferenceNo;
+        if (typeof clientAddress === 'string') quotation.clientAddress = clientAddress;
+        if (typeof clientLogoUrl === 'string') quotation.clientLogoUrl = clientLogoUrl;
+        if (typeof country === 'string') quotation.country = country;
+        if (typeof taxIdName === 'string') quotation.taxIdName = taxIdName;
+        if (typeof taxIdValue === 'string') quotation.taxIdValue = taxIdValue;
         quotation.quoteDate = quoteDate;
         quotation.validUntil = validUntil;
         quotation.lineItems = lineItems;

@@ -10,10 +10,22 @@ export interface Quotation {
   _id: string; // MongoDB uses _id
   id?: string; // For compatibility if needed, but best to stick to _id or map it
   quoteNumber: string;
+  issuerCompanyName?: string;
+  issuerTaxIdType?: string;
+  issuerTaxIdValue?: string;
+  issuerLogoUrl?: string;
+  issuerLogoDataUrl?: string;
   clientName: string;
   companyName: string;
   contactNumber: string;
   email?: string;
+  clientReferenceNo?: string;
+  clientAddress?: string;
+  clientLogoUrl?: string;
+  clientLogoDataUrl?: string;
+  country?: string;
+  taxIdName?: string;
+  taxIdValue?: string;
   quoteDate: Date;
   validUntil: Date;
   lineItems: LineItem[];

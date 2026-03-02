@@ -11,8 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { COUNTRY_OPTIONS, TAX_ID_NAME_BY_COUNTRY, TAX_ID_NAME_OPTIONS } from '@/data/taxIdCatalog';
 
 interface Client {
   _id: string;
@@ -21,6 +23,9 @@ interface Client {
   email: string;
   contactNumber: string;
   address?: string;
+  country?: string;
+  taxIdName?: string;
+  taxIdValue?: string;
   gstin?: string;
 }
 
@@ -36,7 +41,9 @@ export default function Clients() {
   const [email, setEmail] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [address, setAddress] = useState('');
-  const [gstin, setGstin] = useState('');
+  const [country, setCountry] = useState('');
+  const [taxIdName, setTaxIdName] = useState('');
+  const [taxIdValue, setTaxIdValue] = useState('');
 
   const [user, setUser] = useState<any>(null);
 
@@ -65,7 +72,9 @@ export default function Clients() {
     setEmail('');
     setContactNumber('');
     setAddress('');
-    setGstin('');
+    setCountry('');
+    setTaxIdName('');
+    setTaxIdValue('');
     setEditingId(null);
   };
 
@@ -77,7 +86,9 @@ export default function Clients() {
       setEmail(client.email);
       setContactNumber(client.contactNumber);
       setAddress(client.address || '');
-      setGstin(client.gstin || '');
+      setCountry(client.country || '');
+      setTaxIdName(client.taxIdName || (client.country ? TAX_ID_NAME_BY_COUNTRY[client.country] || '' : ''));
+      setTaxIdValue(client.taxIdValue || client.gstin || '');
     } else {
       resetForm();
     }
@@ -93,7 +104,10 @@ export default function Clients() {
         email,
         contactNumber,
         address,
-        gstin,
+        country,
+        taxIdName,
+        taxIdValue,
+        gstin: taxIdValue,
       };
 
       if (editingId) {
@@ -173,8 +187,49 @@ export default function Clients() {
                       <Input value={address} onChange={(e) => setAddress(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label>GSTIN</Label>
-                      <Input value={gstin} onChange={(e) => setGstin(e.target.value)} />
+                      <Label>Country</Label>
+                      <Select
+                        value={country || 'none'}
+                        onValueChange={(value) => {
+                          const nextCountry = value === 'none' ? '' : value;
+                          setCountry(nextCountry);
+                          if (nextCountry && TAX_ID_NAME_BY_COUNTRY[nextCountry]) {
+                            setTaxIdName(TAX_ID_NAME_BY_COUNTRY[nextCountry]);
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {COUNTRY_OPTIONS.map((item) => (
+                            <SelectItem key={item} value={item}>
+                              {item}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Primary Tax ID Name</Label>
+                      <Select value={taxIdName || 'none'} onValueChange={(value) => setTaxIdName(value === 'none' ? '' : value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tax ID name" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {TAX_ID_NAME_OPTIONS.map((item) => (
+                            <SelectItem key={item} value={item}>
+                              {item}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{taxIdName || 'Tax ID Number'}</Label>
+                      <Input value={taxIdValue} onChange={(e) => setTaxIdValue(e.target.value)} />
                     </div>
                     <Button type="submit" className="w-full">{editingId ? 'Update Client' : 'Create Client'}</Button>
                   </form>
@@ -198,7 +253,8 @@ export default function Clients() {
                     <th className="text-left py-3 px-4 font-medium">Email</th>
                     <th className="text-left py-3 px-4 font-medium">Contact</th>
                     <th className="text-left py-3 px-4 font-medium">Address</th>
-                    <th className="text-left py-3 px-4 font-medium">GSTIN</th>
+                    <th className="text-left py-3 px-4 font-medium">Country</th>
+                    <th className="text-left py-3 px-4 font-medium">Primary Tax ID</th>
                     {user?.role === 'SuperAdmin' && (
                       <th className="text-right py-3 px-4 font-medium">Actions</th>
                     )}
@@ -212,7 +268,12 @@ export default function Clients() {
                       <td className="py-3 px-4 text-muted-foreground">{client.email || '-'}</td>
                       <td className="py-3 px-4 text-muted-foreground">{client.contactNumber || '-'}</td>
                       <td className="py-3 px-4 text-muted-foreground">{client.address || '-'}</td>
-                      <td className="py-3 px-4 text-muted-foreground">{client.gstin || '-'}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{client.country || '-'}</td>
+                      <td className="py-3 px-4 text-muted-foreground">
+                        {client.taxIdName && (client.taxIdValue || client.gstin)
+                          ? `${client.taxIdName}: ${client.taxIdValue || client.gstin}`
+                          : (client.taxIdValue || client.gstin || '-')}
+                      </td>
                       {user?.role === 'SuperAdmin' && (
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">

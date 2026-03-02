@@ -54,20 +54,34 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     doc.text(text, x, y, { align });
   };
 
+  const addImageIfAvailable = (src?: string, x: number = 0, y: number = 0, w: number = 0, h: number = 0) => {
+    if (!src) return false;
+    try {
+      doc.addImage(src, 'PNG', x, y, w, h);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   // --- Header ---
   // Background
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, 40, 'F');
   yPos = 40;
 
-  // Logo (Placeholder 'S')
-  doc.setFillColor(...COLORS.accent);
-  doc.roundedRect(margin, 10, 20, 20, 3, 3, 'F');
-  addText('S', margin + 6.5, 23, 14, 'bold', COLORS.white);
+  // Logo
+  const hasIssuerLogo = addImageIfAvailable(quotation.issuerLogoDataUrl || quotation.issuerLogoUrl, margin, 10, 20, 20);
+  if (!hasIssuerLogo) {
+    doc.setFillColor(...COLORS.accent);
+    doc.roundedRect(margin, 10, 20, 20, 3, 3, 'F');
+    addText('S', margin + 6.5, 23, 14, 'bold', COLORS.white);
+  }
 
   // Company Name
   if (includeCompanyName) {
-    addText('Semixon Technologies', margin + 26, 18, 16, 'bold', COLORS.white);
+    const issuerName = quotation.issuerCompanyName || COMPANY_INFO.name;
+    addText(issuerName.replace(' Private Limited', ''), margin + 26, 18, 16, 'bold', COLORS.white);
     addText('Private Limited', margin + 26, 25, 10, 'normal', COLORS.white);
   }
 
@@ -85,11 +99,13 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     yPos += 5;
   }
   if (includeCompanyName) {
-    addText(COMPANY_INFO.name, margin, yPos, 9, 'bold');
+    addText(quotation.issuerCompanyName || COMPANY_INFO.name, margin, yPos, 9, 'bold');
     yPos += 5;
   }
   if (includeGstin) {
-    addText(`GSTIN: ${COMPANY_INFO.gstin}`, margin, yPos, 8);
+    const issuerTaxType = quotation.issuerTaxIdType || 'GSTIN';
+    const issuerTaxValue = quotation.issuerTaxIdValue || COMPANY_INFO.gstin;
+    addText(`${issuerTaxType}: ${issuerTaxValue}`, margin, yPos, 8);
     yPos += 4;
   }
   if (includeCin) {
@@ -114,18 +130,45 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   // --- Bill To Box ---
   yPos = includeClientDetails ? 80 : 70;
   if (includeClientDetails) {
+    const hasCountry = Boolean(quotation.country);
+    const hasTaxId = Boolean(quotation.taxIdName || quotation.taxIdValue);
+    const hasReference = Boolean(quotation.clientReferenceNo);
+    const hasAddress = Boolean(quotation.clientAddress);
+    const extraLines = (hasCountry ? 1 : 0) + (hasTaxId ? 1 : 0) + (hasReference ? 1 : 0) + (hasAddress ? 1 : 0);
+    const billToHeight = 35 + extraLines * 5;
+
     doc.setFillColor(...COLORS.lightGray);
-    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 35, 2, 2, 'F');
+    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, billToHeight, 2, 2, 'F');
 
     const boxPadding = 5;
     addText('BILL TO:', margin + boxPadding, yPos + 8 + boxPadding, 8, 'bold', COLORS.accent);
     addText(quotation.clientName, margin + boxPadding, yPos + 18, 11, 'bold', COLORS.primary);
     addText(quotation.companyName, margin + boxPadding, yPos + 24, 9, 'normal', COLORS.text);
 
-    const contactInfo = [quotation.contactNumber, quotation.email].filter(Boolean).join(' | ');
-    addText(contactInfo, margin + boxPadding, yPos + 30, 9, 'normal', COLORS.text);
+    // Client logo on the top-right of bill-to block (if uploaded)
+    addImageIfAvailable(quotation.clientLogoDataUrl || quotation.clientLogoUrl, pageWidth - margin - 26, yPos + 8, 18, 18);
 
-    yPos += 45;
+    let clientLineY = yPos + 30;
+    const contactInfo = [quotation.contactNumber, quotation.email].filter(Boolean).join(' | ');
+    addText(contactInfo, margin + boxPadding, clientLineY, 9, 'normal', COLORS.text);
+    if (hasCountry) {
+      clientLineY += 5;
+      addText(`Country: ${quotation.country}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
+    }
+    if (hasTaxId) {
+      clientLineY += 5;
+      addText(`${quotation.taxIdName || 'Tax ID'}: ${quotation.taxIdValue || '-'}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
+    }
+    if (quotation.clientReferenceNo) {
+      clientLineY += 5;
+      addText(`Reference: ${quotation.clientReferenceNo}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
+    }
+    if (quotation.clientAddress) {
+      clientLineY += 5;
+      addText(`Address: ${quotation.clientAddress}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
+    }
+
+    yPos += billToHeight + 10;
   }
 
   // --- Table ---

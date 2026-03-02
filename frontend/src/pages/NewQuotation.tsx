@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Send, Download, Check, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Send, Download, Check, ArrowUp, ArrowDown, Search, Upload } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from 
 import { generateQuotationPDF, getQuotationPDFBlob } from '@/lib/pdfGenerator';
 import { toast } from 'sonner';
 import api from '@/lib/api'; // Added API import
+import { TAX_ID_NAME_BY_COUNTRY, TAX_ID_NAME_OPTIONS } from '@/data/taxIdCatalog';
 
 interface FormLineItem extends Omit<LineItem, 'id'> {
   id: string;
@@ -26,6 +27,11 @@ interface Client {
   companyName: string;
   email?: string;
   contactNumber?: string;
+  address?: string;
+  country?: string;
+  taxIdName?: string;
+  taxIdValue?: string;
+  gstin?: string;
 }
 
 const ensureBullets = (text: string) => {
@@ -46,15 +52,49 @@ const CURRENCY_OPTIONS = [
   { code: 'SGD', label: 'SGD - Singapore Dollar' },
 ];
 
+const COMMON_TAX_ID_TYPES = ['GSTIN', 'VAT', 'EIN', 'TIN'];
+const OTHER_TAX_ID_OPTION = '__OTHER__';
+
+const TAX_ID_TYPE_OPTIONS = [
+  ...COMMON_TAX_ID_TYPES,
+  ...TAX_ID_NAME_OPTIONS.filter((item) => !COMMON_TAX_ID_TYPES.includes(item)),
+];
+
+const createQuoteNumber = () =>
+  `QT-${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+
+const toDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+
 export default function NewQuotation() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
+  const [quoteNumber, setQuoteNumber] = useState(createQuoteNumber);
+  const [issuerCompanyName, setIssuerCompanyName] = useState(COMPANY_INFO.name);
+  const [issuerTaxIdType, setIssuerTaxIdType] = useState('');
+  const [issuerTaxIdCustomType, setIssuerTaxIdCustomType] = useState('');
+  const [issuerTaxIdValue, setIssuerTaxIdValue] = useState(COMPANY_INFO.gstin);
+  const [issuerLogoFile, setIssuerLogoFile] = useState<File | null>(null);
+  const [issuerLogoPreview, setIssuerLogoPreview] = useState<string>('');
   const [clientName, setClientName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [clientReferenceNo, setClientReferenceNo] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
+  const [country, setCountry] = useState('');
+  const [taxIdName, setTaxIdName] = useState('');
+  const [clientTaxIdCustomType, setClientTaxIdCustomType] = useState('');
+  const [taxIdValue, setTaxIdValue] = useState('');
+  const [clientLogoFile, setClientLogoFile] = useState<File | null>(null);
+  const [clientLogoPreview, setClientLogoPreview] = useState<string>('');
   const [quoteDate, setQuoteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [validUntil, setValidUntil] = useState(format(addDays(new Date(), 15), 'yyyy-MM-dd'));
   const [includeGst, setIncludeGst] = useState(true);
@@ -73,6 +113,8 @@ export default function NewQuotation() {
   const [clientSearch, setClientSearch] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientResults, setShowClientResults] = useState(false);
+  const issuerLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const clientLogoInputRef = useRef<HTMLInputElement | null>(null);
 
   // Line items with default items
   const [lineItems, setLineItems] = useState<FormLineItem[]>(
@@ -173,6 +215,17 @@ export default function NewQuotation() {
     }).format(converted);
   };
 
+  const uploadFileToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data.filePath as string;
+  };
+
   const handleSaveDraft = async () => {
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
@@ -180,8 +233,14 @@ export default function NewQuotation() {
     }
     setIsSubmitting(true);
     try {
+      const issuerLogoUrl = issuerLogoFile ? await uploadFileToCloudinary(issuerLogoFile) : undefined;
+      const clientLogoUrl = clientLogoFile ? await uploadFileToCloudinary(clientLogoFile) : undefined;
       const quotationData = prepareQuotationData('draft');
-      await api.post('/quotations', quotationData);
+      await api.post('/quotations', {
+        ...quotationData,
+        issuerLogoUrl,
+        clientLogoUrl,
+      });
       toast.success('Quotation saved as draft');
       navigate('/quotations');
     } catch (error: any) {
@@ -203,15 +262,29 @@ export default function NewQuotation() {
     setIsSubmitting(true);
     try {
       const apiPayload = prepareQuotationData('sent');
+      const issuerLogoUrl = issuerLogoFile ? await uploadFileToCloudinary(issuerLogoFile) : undefined;
+      const clientLogoUrl = clientLogoFile ? await uploadFileToCloudinary(clientLogoFile) : undefined;
 
       // Construct Quotation object for PDF Generator (now flat structure)
       const quotationForPDF: Quotation = {
         _id: 'temp-pdf-id',
         quoteNumber: apiPayload.quoteNumber,
+        issuerCompanyName: apiPayload.issuerCompanyName,
+        issuerTaxIdType: apiPayload.issuerTaxIdType,
+        issuerTaxIdValue: apiPayload.issuerTaxIdValue,
+        issuerLogoUrl,
+        issuerLogoDataUrl: issuerLogoPreview || undefined,
         clientName: apiPayload.clientName,
         companyName: apiPayload.companyName,
         contactNumber: apiPayload.contactNumber,
         email: apiPayload.email,
+        clientReferenceNo: apiPayload.clientReferenceNo,
+        clientAddress: apiPayload.clientAddress,
+        clientLogoUrl,
+        clientLogoDataUrl: clientLogoPreview || undefined,
+        country: apiPayload.country,
+        taxIdName: apiPayload.taxIdName,
+        taxIdValue: apiPayload.taxIdValue,
         quoteDate: new Date(apiPayload.quoteDate),
         validUntil: new Date(apiPayload.validUntil),
         includeCompanyName: apiPayload.includeCompanyName,
@@ -255,6 +328,8 @@ export default function NewQuotation() {
       // 3. Send to API with PDF URL
       const finalPayload = {
         ...apiPayload,
+        issuerLogoUrl,
+        clientLogoUrl,
         pdfUrl: uploadData.filePath
       };
 
@@ -269,12 +344,25 @@ export default function NewQuotation() {
   };
 
   const prepareQuotationData = (status: 'draft' | 'sent') => {
+    const resolvedIssuerTaxIdType =
+      issuerTaxIdType === OTHER_TAX_ID_OPTION ? issuerTaxIdCustomType.trim() : issuerTaxIdType;
+    const resolvedClientTaxIdType =
+      taxIdName === OTHER_TAX_ID_OPTION ? clientTaxIdCustomType.trim() : taxIdName;
+
     return {
-      quoteNumber: `QT-${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`, // Backend should probably handle this but sticking to frontend logic for now or sending it
+      quoteNumber,
+      issuerCompanyName: issuerCompanyName.trim() || COMPANY_INFO.name,
+      issuerTaxIdType: resolvedIssuerTaxIdType || 'GSTIN',
+      issuerTaxIdValue: issuerTaxIdValue.trim() || COMPANY_INFO.gstin,
       clientName,
       companyName,
       contactNumber,
       email,
+      clientReferenceNo,
+      clientAddress,
+      country,
+      taxIdName: resolvedClientTaxIdType,
+      taxIdValue,
       quoteDate,
       validUntil,
       lineItems: lineItems.map(({ id, ...rest }) => rest), // Remove temp ID
@@ -306,13 +394,25 @@ export default function NewQuotation() {
 
     const quotation: Quotation = {
       _id: `temp-${Date.now()}`,
-      quoteNumber: `QT-${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+      quoteNumber,
+      issuerCompanyName: issuerCompanyName.trim() || COMPANY_INFO.name,
+      issuerTaxIdType:
+        (issuerTaxIdType === OTHER_TAX_ID_OPTION ? issuerTaxIdCustomType.trim() : issuerTaxIdType) || 'GSTIN',
+      issuerTaxIdValue: issuerTaxIdValue.trim() || COMPANY_INFO.gstin,
+      issuerLogoDataUrl: issuerLogoPreview || undefined,
       clientName,
       companyName,
       quoteDate: new Date(quoteDate),
       validUntil: new Date(validUntil),
       contactNumber,
       email: email || undefined,
+      clientReferenceNo: clientReferenceNo || undefined,
+      clientAddress: clientAddress || undefined,
+      clientLogoDataUrl: clientLogoPreview || undefined,
+      country: country || undefined,
+      taxIdName:
+        (taxIdName === OTHER_TAX_ID_OPTION ? clientTaxIdCustomType.trim() : taxIdName) || undefined,
+      taxIdValue: taxIdValue || undefined,
       lineItems: lineItems.map((item) => ({
         id: item.id,
         service: item.service,
@@ -340,6 +440,28 @@ export default function NewQuotation() {
 
     generateQuotationPDF(quotation);
     toast.success('PDF downloaded successfully');
+  };
+
+  const handleIssuerLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIssuerLogoFile(file);
+    try {
+      setIssuerLogoPreview(await toDataUrl(file));
+    } catch {
+      toast.error('Failed to load company logo preview');
+    }
+  };
+
+  const handleClientLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setClientLogoFile(file);
+    try {
+      setClientLogoPreview(await toDataUrl(file));
+    } catch {
+      toast.error('Failed to load client logo preview');
+    }
   };
 
   useEffect(() => {
@@ -433,48 +555,97 @@ export default function NewQuotation() {
       {/* Content */}
       <div className="px-6 lg:px-8 py-6">
         <div className="max-w-5xl mx-auto space-y-6">
-          {/* Company Info Banner */}
+          {/* Company Details */}
           <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
-                <div className="flex items-center gap-2 text-foreground">
-                  <Checkbox
-                    id="includeCompanyName"
-                    checked={includeCompanyName}
-                    onCheckedChange={(checked) => setIncludeCompanyName(checked === true)}
+            <CardContent className="py-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-3 space-y-2">
+                  <Label htmlFor="issuerCompanyName">
+                    Company Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="issuerCompanyName"
+                    placeholder="Enter company name"
+                    value={issuerCompanyName}
+                    onChange={(e) => setIssuerCompanyName(e.target.value)}
                   />
-                  {includeCompanyName && (
-                    <Label htmlFor="includeCompanyName" className="cursor-pointer text-sm font-semibold">
-                      {COMPANY_INFO.name}
-                    </Label>
+                </div>
+                <div className="md:col-span-3 space-y-2">
+                  <Label>Primary Tax ID</Label>
+                  <div className="flex gap-2">
+                    <Select value={issuerTaxIdType || '__EMPTY__'} onValueChange={(value) => setIssuerTaxIdType(value === '__EMPTY__' ? '' : value)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Select Tax ID Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
+                        {TAX_ID_TYPE_OPTIONS.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="Enter Tax ID Number"
+                      value={issuerTaxIdValue}
+                      onChange={(e) => setIssuerTaxIdValue(e.target.value)}
+                    />
+                  </div>
+                  {issuerTaxIdType === OTHER_TAX_ID_OPTION && (
+                    <Input
+                      placeholder="Specify Tax ID Type"
+                      value={issuerTaxIdCustomType}
+                      onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
+                    />
                   )}
+                  <p className="text-xs text-muted-foreground">GST, VAT, EIN or local business tax number</p>
                 </div>
-                <div className="flex flex-wrap gap-4 text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="includeGstin"
-                      checked={includeGstin}
-                      onCheckedChange={(checked) => setIncludeGstin(checked === true)}
-                    />
-                    {includeGstin && (
-                      <Label htmlFor="includeGstin" className="cursor-pointer text-sm">
-                        GSTIN: {COMPANY_INFO.gstin}
-                      </Label>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="includeCin"
-                      checked={includeCin}
-                      onCheckedChange={(checked) => setIncludeCin(checked === true)}
-                    />
-                    {includeCin && (
-                      <Label htmlFor="includeCin" className="cursor-pointer text-sm">
-                        CIN: {COMPANY_INFO.cin}
-                      </Label>
-                    )}
-                  </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="quoteDate">Quote Date</Label>
+                  <Input
+                    id="quoteDate"
+                    type="date"
+                    value={quoteDate}
+                    onChange={(e) => setQuoteDate(e.target.value)}
+                  />
                 </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="validUntil">Valid Till</Label>
+                  <Input
+                    id="validUntil"
+                    type="date"
+                    value={validUntil}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                  />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="quoteNumber">
+                    Quotation No <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="quoteNumber"
+                    value={quoteNumber}
+                    onChange={(e) => setQuoteNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <input
+                  ref={issuerLogoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  className="hidden"
+                  onChange={handleIssuerLogoSelect}
+                />
+                <Button variant="outline" type="button" onClick={() => issuerLogoInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Company Logo
+                </Button>
+                {issuerLogoFile && (
+                  <p className="mt-2 text-xs text-muted-foreground">{issuerLogoFile.name}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -531,6 +702,13 @@ export default function NewQuotation() {
                                         setCompanyName(client.companyName);
                                         setEmail(client.email || '');
                                         setContactNumber(client.contactNumber || '');
+                                        setClientAddress(client.address || '');
+                                        const nextCountry = client.country || '';
+                                        const nextTaxIdName = client.taxIdName || (nextCountry ? TAX_ID_NAME_BY_COUNTRY[nextCountry] || '' : '');
+                                        setCountry(nextCountry);
+                                        setTaxIdName(nextTaxIdName);
+                                        setClientTaxIdCustomType('');
+                                        setTaxIdValue(client.taxIdValue || client.gstin || '');
                                         setClientSearch(client.name);
                                         setShowClientResults(false);
                                       }}
@@ -613,23 +791,77 @@ export default function NewQuotation() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="quoteDate">Quote Date</Label>
-                        <Input
-                          id="quoteDate"
-                          type="date"
-                          value={quoteDate}
-                          onChange={(e) => setQuoteDate(e.target.value)}
-                        />
+                        <Label htmlFor="taxIdName">Primary Tax ID Name</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={taxIdName || '__EMPTY__'}
+                            onValueChange={(value) => setTaxIdName(value === '__EMPTY__' ? '' : value)}
+                          >
+                            <SelectTrigger id="taxIdName" className="w-[140px]">
+                              <SelectValue placeholder="Select Tax ID Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
+                              {TAX_ID_TYPE_OPTIONS.map((item) => (
+                                <SelectItem key={item} value={item}>
+                                  {item}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            id="taxIdValue"
+                            placeholder="Enter Tax ID Number"
+                            value={taxIdValue}
+                            onChange={(e) => setTaxIdValue(e.target.value)}
+                          />
+                        </div>
+                        {taxIdName === OTHER_TAX_ID_OPTION && (
+                          <Input
+                            placeholder="Specify Tax ID Type"
+                            value={clientTaxIdCustomType}
+                            onChange={(e) => setClientTaxIdCustomType(e.target.value)}
+                          />
+                        )}
+                        <p className="text-xs text-muted-foreground">GST, VAT, EIN or local business tax number</p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="validUntil">Valid Until</Label>
+                        <Label htmlFor="clientReferenceNo">Client PO / Reference No.</Label>
                         <Input
-                          id="validUntil"
-                          type="date"
-                          value={validUntil}
-                          onChange={(e) => setValidUntil(e.target.value)}
+                          id="clientReferenceNo"
+                          placeholder="Optional – provided by client if available"
+                          value={clientReferenceNo}
+                          onChange={(e) => setClientReferenceNo(e.target.value)}
                         />
                       </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="clientAddress">Client Address</Label>
+                        <Input
+                          id="clientAddress"
+                          placeholder="Enter client address"
+                          value={clientAddress}
+                          onChange={(e) => setClientAddress(e.target.value)}
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end">
+                        <input
+                          ref={clientLogoInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg"
+                          className="hidden"
+                          onChange={handleClientLogoSelect}
+                        />
+                        <Button type="button" variant="outline" onClick={() => clientLogoInputRef.current?.click()}>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Client Logo
+                        </Button>
+                      </div>
+                      {clientLogoFile && (
+                        <div className="md:col-span-2 text-right text-xs text-muted-foreground">
+                          {clientLogoFile.name}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 )}

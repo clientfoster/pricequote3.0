@@ -1,11 +1,24 @@
 const asyncHandler = require('express-async-handler');
 const Client = require('../models/Client');
 
+const clean = (value) => (typeof value === 'string' ? value.trim() : value);
+
 // @desc    Create new client
 // @route   POST /api/clients
 // @access  Private
 const createClient = asyncHandler(async (req, res) => {
-    const { name, companyName, email, contactNumber, address, gstin } = req.body;
+    const {
+        name,
+        companyName,
+        email,
+        contactNumber,
+        address,
+        country,
+        taxIdName,
+        taxIdValue,
+        gstin,
+    } = req.body;
+    const normalizedTaxIdValue = clean(taxIdValue) || clean(gstin) || '';
 
     const client = new Client({
         user: req.user._id,
@@ -14,7 +27,10 @@ const createClient = asyncHandler(async (req, res) => {
         email,
         contactNumber,
         address,
-        gstin,
+        country: clean(country),
+        taxIdName: clean(taxIdName),
+        taxIdValue: normalizedTaxIdValue,
+        gstin: normalizedTaxIdValue,
     });
 
     const createdClient = await client.save();
@@ -33,7 +49,17 @@ const getClients = asyncHandler(async (req, res) => {
 // @route   PUT /api/clients/:id
 // @access  Private
 const updateClient = asyncHandler(async (req, res) => {
-    const { name, companyName, email, contactNumber, address, gstin } = req.body;
+    const {
+        name,
+        companyName,
+        email,
+        contactNumber,
+        address,
+        country,
+        taxIdName,
+        taxIdValue,
+        gstin,
+    } = req.body;
 
     const client = await Client.findById(req.params.id);
 
@@ -43,7 +69,13 @@ const updateClient = asyncHandler(async (req, res) => {
         client.email = email || client.email;
         client.contactNumber = contactNumber || client.contactNumber;
         client.address = address || client.address;
-        client.gstin = gstin || client.gstin;
+        client.country = clean(country) || client.country;
+        client.taxIdName = clean(taxIdName) || client.taxIdName;
+        const normalizedTaxIdValue = clean(taxIdValue) || clean(gstin);
+        if (typeof normalizedTaxIdValue === 'string' && normalizedTaxIdValue.length > 0) {
+            client.taxIdValue = normalizedTaxIdValue;
+            client.gstin = normalizedTaxIdValue;
+        }
 
         const updatedClient = await client.save();
         res.json(updatedClient);

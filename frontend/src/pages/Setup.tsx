@@ -36,7 +36,15 @@ export default function Setup() {
             toast.success('Super Admin created successfully! Please login.');
             navigate('/login');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Setup failed');
+            const rawMessage = error.response?.data?.message || '';
+            const status = error.response?.status;
+            let message = rawMessage || 'Setup failed';
+
+            if (status === 400 && /exist|duplicate/i.test(rawMessage)) {
+                message = 'Admin already exists. Please login.';
+            }
+
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }

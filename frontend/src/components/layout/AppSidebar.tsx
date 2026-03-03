@@ -75,7 +75,7 @@ export function AppSidebar() {
             </div>
             <div className="flex flex-col">
               <span className="font-display font-semibold text-sidebar-accent-foreground text-sm">
-                Semixon
+                {user?.tenantName || 'Your Company'}
               </span>
               <span className="text-xs text-sidebar-muted">Quote Pro</span>
             </div>
@@ -170,12 +170,16 @@ export function AppMobileNav() {
       <div className="h-14 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <span className="text-sidebar-primary-foreground font-bold text-sm">S</span>
+            <span className="text-sidebar-primary-foreground font-bold text-sm">
+              {(user?.tenantName || 'Q').charAt(0).toUpperCase()}
+            </span>
           </div>
-          <div className="flex flex-col leading-none">
-            <span className="font-display font-semibold text-foreground text-sm">Semixon</span>
-            <span className="text-[10px] text-muted-foreground">Quote Pro</span>
-          </div>
+            <div className="flex flex-col leading-none">
+              <span className="font-display font-semibold text-foreground text-sm">
+                {user?.tenantName || 'Your Company'}
+              </span>
+              <span className="text-[10px] text-muted-foreground">Quote Pro</span>
+            </div>
         </div>
 
         <Sheet>
@@ -189,11 +193,13 @@ export function AppMobileNav() {
               <div className="flex items-center h-16 px-4 border-b border-sidebar-border">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                    <span className="text-sidebar-primary-foreground font-bold text-sm">S</span>
+                    <span className="text-sidebar-primary-foreground font-bold text-sm">
+                      {(user?.tenantName || 'Q').charAt(0).toUpperCase()}
+                    </span>
                   </div>
                   <div className="flex flex-col">
                     <span className="font-display font-semibold text-sidebar-accent-foreground text-sm">
-                      Semixon
+                      {user?.tenantName || 'Your Company'}
                     </span>
                     <span className="text-xs text-sidebar-muted">Quote Pro</span>
                   </div>

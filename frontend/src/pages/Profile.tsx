@@ -43,7 +43,7 @@ export default function Profile() {
     };
 
     return (
-        <div className="p-6 max-w-2xl mx-auto space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
             <h1 className="text-3xl font-bold">My Profile</h1>
             <Card>
                 <CardHeader>
@@ -51,12 +51,12 @@ export default function Profile() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                             <Avatar className="h-20 w-20">
                                 <AvatarImage src={preview} />
                                 <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="space-y-1">
+                            <div className="space-y-1 w-full">
                                 <Label htmlFor="image">Profile Picture</Label>
                                 <Input
                                     id="image"

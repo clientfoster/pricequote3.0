@@ -141,9 +141,9 @@ export default function Clients() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+      <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-display font-bold text-foreground">Clients</h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -241,7 +241,7 @@ export default function Clients() {
       </header>
 
       {/* Content */}
-      <div className="px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

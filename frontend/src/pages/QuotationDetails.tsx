@@ -39,7 +39,7 @@ export default function QuotationDetails() {
     const showClientDetails = quotation.includeClientDetails !== false;
 
     return (
-        <div className="min-h-screen p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -59,7 +59,7 @@ export default function QuotationDetails() {
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" onClick={() => generateQuotationPDF(quotation)}>
                         <Download className="w-4 h-4 mr-2" />
                         Download PDF
@@ -103,7 +103,7 @@ export default function QuotationDetails() {
                             </div>
                         </div>
 
-                        <div className="border rounded-lg overflow-hidden">
+                        <div className="border rounded-lg overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="bg-muted/50">
                                     <tr>

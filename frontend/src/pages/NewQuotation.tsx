@@ -480,7 +480,7 @@ export default function NewQuotation() {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-14 md:top-0 z-10 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
@@ -1110,7 +1110,6 @@ export default function NewQuotation() {
     </div>
   );
 }
-
 
 
 

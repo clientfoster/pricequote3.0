@@ -56,8 +56,8 @@ export default function Settings() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="px-6 lg:px-8 py-4">
+      <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground">Settings</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -68,7 +68,7 @@ export default function Settings() {
       </header>
 
       {/* Content */}
-      <div className="px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="max-w-3xl mx-auto space-y-6">
 
           {/* Company Info Placeholder */}

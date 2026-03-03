@@ -64,9 +64,9 @@ export default function EmployeeDashboard() {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="bg-card border-b border-border sticky top-0 z-10">
-                <div className="px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
+            <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
+                <div className="px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h1 className="text-2xl font-display font-bold text-foreground">My Dashboard</h1>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -82,7 +82,7 @@ export default function EmployeeDashboard() {
             </header>
 
             {/* Content */}
-            <div className="px-6 lg:px-8 py-6 space-y-6">
+            <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard

@@ -59,9 +59,9 @@ export default function QuotationList() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+      <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-display font-bold text-foreground">Quotations</h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -77,7 +77,7 @@ export default function QuotationList() {
       </header>
 
       {/* Content */}
-      <div className="px-6 lg:px-8 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
@@ -93,7 +93,7 @@ export default function QuotationList() {
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value as QuotationStatus | 'all')}
           >
-            <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
               <Filter className="w-4 h-4 mr-2" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>

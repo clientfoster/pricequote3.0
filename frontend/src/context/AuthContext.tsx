@@ -41,9 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('userInfo', JSON.stringify(data));
             toast.success('Login successful');
         } catch (error: any) {
-            const message =
+            const status = error.response?.status;
+            let message =
                 error.response?.data?.message ||
                 (error.request ? 'Cannot reach backend API. Check backend server/CORS.' : 'Login failed');
+
+            if (status === 401) {
+                message = 'Invalid email or password';
+            } else if (status === 404) {
+                message = 'Login API not found. Check VITE_API_URL (should point to your backend /api).';
+            }
+
             toast.error(message);
             throw error;
         }

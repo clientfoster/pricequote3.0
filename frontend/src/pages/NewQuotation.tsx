@@ -65,10 +65,10 @@ export default function NewQuotation() {
 
   // Form state
   const [quoteNumber, setQuoteNumber] = useState(createQuoteNumber);
-  const [issuerCompanyName, setIssuerCompanyName] = useState(COMPANY_INFO.name);
+  const [issuerCompanyName, setIssuerCompanyName] = useState('');
   const [issuerTaxIdType, setIssuerTaxIdType] = useState('');
   const [issuerTaxIdCustomType, setIssuerTaxIdCustomType] = useState('');
-  const [issuerTaxIdValue, setIssuerTaxIdValue] = useState(COMPANY_INFO.gstin);
+  const [issuerTaxIdValue, setIssuerTaxIdValue] = useState('');
   const [issuerLogoFile, setIssuerLogoFile] = useState<File | null>(null);
   const [issuerLogoPreview, setIssuerLogoPreview] = useState<string>('');
   const [clientName, setClientName] = useState('');
@@ -90,7 +90,7 @@ export default function NewQuotation() {
   const [includeTax, setIncludeTax] = useState(false);
   const [taxRate, setTaxRate] = useState(10);
   const [showTaxSection, setShowTaxSection] = useState(true);
-  const [showServicesSection, setShowServicesSection] = useState(true);
+  const [showServicesSection] = useState(true);
   const [includeCompanyName, setIncludeCompanyName] = useState(true);
   const [includeGstin, setIncludeGstin] = useState(true);
   const [includeClientDetails, setIncludeClientDetails] = useState(true);
@@ -700,7 +700,7 @@ export default function NewQuotation() {
                       />
                       <CardTitle>
                         <Label htmlFor="includeClientDetails" className="cursor-pointer">
-                          Client Details
+                          Client Details <span className="text-xs text-muted-foreground">(Optional)</span>
                         </Label>
                       </CardTitle>
                     </div>
@@ -890,16 +890,7 @@ export default function NewQuotation() {
                 <CardHeader className="border-b border-border/60 bg-muted/30">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="showServicesSection"
-                        checked={showServicesSection}
-                        onCheckedChange={(checked) => setShowServicesSection(checked === true)}
-                      />
-                      <CardTitle>
-                        <Label htmlFor="showServicesSection" className="cursor-pointer">
-                          Services & Pricing
-                        </Label>
-                      </CardTitle>
+                      <CardTitle>Services & Pricing</CardTitle>
                     </div>
                     <div className="order-3 sm:order-2 sm:flex-1">
                       <CardDescription>
@@ -912,7 +903,6 @@ export default function NewQuotation() {
                     </Button>
                   </div>
                 </CardHeader>
-                {showServicesSection && (
                 <CardContent className="space-y-4">
                   {lineItems.map((item, index) => (
                     <div
@@ -1037,7 +1027,6 @@ export default function NewQuotation() {
                     </div>
                   ))}
                 </CardContent>
-                )}
               </Card>
             </div>
 

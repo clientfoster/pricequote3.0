@@ -675,7 +675,7 @@ export default function NewQuotation() {
                       value={quoteDate}
                       onChange={(e) => setQuoteDate(e.target.value)}
                     />
-                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
@@ -688,7 +688,7 @@ export default function NewQuotation() {
                       value={validUntil}
                       onChange={(e) => setValidUntil(e.target.value)}
                     />
-                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>

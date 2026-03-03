@@ -481,73 +481,71 @@ export default function NewQuotation() {
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="sticky top-14 md:top-0 z-10 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
+        <div className="px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div className="flex-1">
-                <h1 className="text-xl font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Professional quotation builder for public users.
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <h1 className="text-lg font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">
                   No login required. Fill details and download instantly.
                 </p>
-                <div className="mt-3 inline-flex rounded-md border border-border bg-background p-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={uxMode === 'outside' ? 'default' : 'ghost'}
-                    className="h-8"
-                    onClick={() => setUxMode('outside')}
-                  >
-                    Outside Labels
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={uxMode === 'inline' ? 'default' : 'ghost'}
-                    className="h-8"
-                    onClick={() => setUxMode('inline')}
-                  >
-                    Inline Labels
-                  </Button>
-                </div>
               </div>
             </div>
-            <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
               {isPublicQuote && (
-                <div className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground sm:w-auto">
-                  <span>Have an account?</span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
-                  >
-                    Login
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                >
+                  Login
+                </Button>
               )}
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
-                <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
-                  <Download className="w-4 h-4" />
-                  Download PDF
-                </Button>
-                <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-                  <Save className="w-4 h-4" />
-                  Save Draft
-                </Button>
-              </div>
+              <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
+              <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                <Save className="w-4 h-4" />
+                Save Draft
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
+          <div className="flex w-full flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Label Style</p>
+              <p className="text-xs text-muted-foreground">Choose how field labels appear.</p>
+            </div>
+            <div className="inline-flex w-full rounded-md border border-border bg-muted/30 p-1 sm:w-auto">
+              <Button
+                type="button"
+                size="sm"
+                variant={uxMode === 'outside' ? 'default' : 'ghost'}
+                className="h-8 flex-1 sm:flex-none"
+                onClick={() => setUxMode('outside')}
+              >
+                Outside
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={uxMode === 'inline' ? 'default' : 'ghost'}
+                className="h-8 flex-1 sm:flex-none"
+                onClick={() => setUxMode('inline')}
+              >
+                Inline
+              </Button>
+            </div>
+          </div>
           {/* Company Details */}
             <Card className="border-primary/20 bg-primary/5 shadow-sm">
               <CardHeader className="border-b border-primary/10 bg-background/60">
@@ -1117,5 +1115,4 @@ export default function NewQuotation() {
     </div>
   );
 }
-
 

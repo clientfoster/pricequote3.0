@@ -41,4 +41,12 @@ app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
+app.get('/api', (req, res) => {
+    res.send('API is running...');
+});
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
+
 module.exports = app;

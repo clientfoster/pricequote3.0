@@ -482,7 +482,7 @@ export default function NewQuotation() {
       {/* Header */}
       <header className="sticky top-14 md:top-0 z-10 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                 <ArrowLeft className="w-5 h-5" />
@@ -494,24 +494,26 @@ export default function NewQuotation() {
                 </p>
               </div>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
               {isPublicQuote && (
-                <Button
-                  size="sm"
-                  variant="secondary"
+                <button
+                  type="button"
                   onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                  className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground sm:text-sm sm:underline"
                 >
                   Login
-                </Button>
+                </button>
               )}
-              <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
-                <Download className="w-4 h-4" />
-                Download PDF
-              </Button>
-              <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-                <Save className="w-4 h-4" />
-                Save Draft
-              </Button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </Button>
+                <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                  <Save className="w-4 h-4" />
+                  Save Draft
+                </Button>
+              </div>
             </div>
           </div>
         </div>

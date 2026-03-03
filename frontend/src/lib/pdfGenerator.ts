@@ -78,8 +78,8 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   }
 
   // Company Name
-  if (includeCompanyName) {
-    const issuerName = quotation.issuerCompanyName || COMPANY_INFO.name;
+  if (includeCompanyName && quotation.issuerCompanyName) {
+    const issuerName = quotation.issuerCompanyName;
     addText(issuerName.replace(' Private Limited', ''), margin + 26, 18, 16, 'bold', COLORS.white);
     addText('Private Limited', margin + 26, 25, 10, 'normal', COLORS.white);
   }
@@ -92,18 +92,18 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   yPos += 15;
 
   // Company Address/Info
-  const hasCompanyInfo = includeCompanyName || includeGstin;
+  const hasCompanyInfo = (includeCompanyName && Boolean(quotation.issuerCompanyName)) || (includeGstin && Boolean(quotation.issuerTaxIdValue));
   if (hasCompanyInfo) {
     addText('FROM:', margin, yPos, 8, 'bold', COLORS.text);
     yPos += 5;
   }
-  if (includeCompanyName) {
-    addText(quotation.issuerCompanyName || COMPANY_INFO.name, margin, yPos, 9, 'bold');
+  if (includeCompanyName && quotation.issuerCompanyName) {
+    addText(quotation.issuerCompanyName, margin, yPos, 9, 'bold');
     yPos += 5;
   }
-  if (includeGstin) {
-    const issuerTaxType = quotation.issuerTaxIdType || 'GSTIN';
-    const issuerTaxValue = quotation.issuerTaxIdValue || COMPANY_INFO.gstin;
+  if (includeGstin && quotation.issuerTaxIdValue) {
+    const issuerTaxType = quotation.issuerTaxIdType || 'Tax ID';
+    const issuerTaxValue = quotation.issuerTaxIdValue;
     addText(`${issuerTaxType}: ${issuerTaxValue}`, margin, yPos, 8);
     yPos += 4;
   }
@@ -243,42 +243,44 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     footerContentY = 20;
   }
 
-  doc.setDrawColor(...COLORS.lightGray);
-  doc.line(margin, footerContentY, pageWidth - margin, footerContentY);
-  footerContentY += 10;
+  const showFooterDetails = Boolean(quotation.issuerCompanyName || quotation.issuerTaxIdValue);
+  if (showFooterDetails) {
+    doc.setDrawColor(...COLORS.lightGray);
+    doc.line(margin, footerContentY, pageWidth - margin, footerContentY);
+    footerContentY += 10;
 
-  // Two columns for footer: Terms (Left), Bank (Right)
-  const colWidth = (pageWidth - 2 * margin) / 2 - 5;
+    // Two columns for footer: Terms (Left), Bank (Right)
+    const colWidth = (pageWidth - 2 * margin) / 2 - 5;
 
-  // Terms
-  let termY = footerContentY;
-  addText('Terms & Conditions', margin, termY, 9, 'bold', COLORS.primary);
-  termY += 5;
-  const terms = [
-    `- Timeline: ${COMPANY_INFO.timeline}`,
-    `- ${COMPANY_INFO.paymentTerms}`,
-    '- Validity: 15 days from issue date',
-    '- Prices subject to change post-validity',
-  ];
-  terms.forEach((term) => {
-    addText(term, margin, termY, 8, 'normal', COLORS.text);
-    termY += 4;
-  });
+    // Terms
+    let termY = footerContentY;
+    addText('Terms & Conditions', margin, termY, 9, 'bold', COLORS.primary);
+    termY += 5;
+    const terms = [
+      `- Timeline: ${COMPANY_INFO.timeline}`,
+      `- ${COMPANY_INFO.paymentTerms}`,
+      '- Validity: 15 days from issue date',
+      '- Prices subject to change post-validity',
+    ];
+    terms.forEach((term) => {
+      addText(term, margin, termY, 8, 'normal', COLORS.text);
+      termY += 4;
+    });
 
-  // Bank Details
-  let bankY = footerContentY;
-  const bankX = pageWidth - margin - colWidth;
-  addText('Bank Details', bankX, bankY, 9, 'bold', COLORS.primary);
-  bankY += 5;
-  addText(`Bank: ${COMPANY_INFO.bankName}`, bankX, bankY, 8, 'normal', COLORS.text);
-  bankY += 4;
-  addText(`Account: ${COMPANY_INFO.name}`, bankX, bankY, 8, 'normal', COLORS.text);
-  bankY += 4;
-  addText(`IFSC: ${COMPANY_INFO.ifsc}`, bankX, bankY, 8, 'normal', COLORS.text);
+    // Bank Details
+    let bankY = footerContentY;
+    const bankX = pageWidth - margin - colWidth;
+    addText('Bank Details', bankX, bankY, 9, 'bold', COLORS.primary);
+    bankY += 5;
+    addText(`Bank: ${COMPANY_INFO.bankName}`, bankX, bankY, 8, 'normal', COLORS.text);
+    bankY += 4;
+    addText(`Account: ${COMPANY_INFO.name}`, bankX, bankY, 8, 'normal', COLORS.text);
+    bankY += 4;
+    addText(`IFSC: ${COMPANY_INFO.ifsc}`, bankX, bankY, 8, 'normal', COLORS.text);
+  }
 
   // --- Global Footer (Page Number / Tagline) ---
   const bottomY = pageHeight - 10;
   addText('Thank you for your business!', pageWidth / 2, bottomY - 5, 8, 'normal', COLORS.accent, 'center');
   addText(`Generated on ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, pageWidth / 2, bottomY, 7, 'normal', [150, 160, 170], 'center');
 };
-

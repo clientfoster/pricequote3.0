@@ -517,14 +517,21 @@ export default function NewQuotation() {
                 </div>
               </div>
             </div>
-            <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 lg:w-auto">
+            <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
               {isPublicQuote && (
-                <Button size="sm" variant="secondary" onClick={() => navigate('/login', { state: { from: '/dashboard' } })}>
-                  Login
-                </Button>
+                <div className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground sm:w-auto">
+                  <span>Have an account?</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                  >
+                    Login
+                  </Button>
+                </div>
               )}
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <Button className="w-full sm:w-auto" variant="outline" onClick={handleDownloadPDF}>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+                <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
                   <Download className="w-4 h-4" />
                   Download PDF
                 </Button>
@@ -1110,6 +1117,5 @@ export default function NewQuotation() {
     </div>
   );
 }
-
 
 

@@ -16,6 +16,11 @@ export default function Settings() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [companyName, setCompanyName] = useState('');
+  const [gstin, setGstin] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [ifsc, setIfsc] = useState('');
 
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -24,6 +29,7 @@ export default function Settings() {
       setUser(parsedUser);
       setName(parsedUser.name);
       setEmail(parsedUser.email);
+      setCompanyName(parsedUser.tenantName || '');
     }
   }, []);
 
@@ -89,14 +95,30 @@ export default function Settings() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="md:col-span-2 space-y-2">
                   <Label>Company Name</Label>
-                  <Input defaultValue={user?.tenantName || ''} placeholder="Company Name" disabled />
+                  <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company Name" />
                 </div>
                 <div className="space-y-2">
                   <Label>GSTIN</Label>
-                  <Input defaultValue="" placeholder="Add GSTIN" disabled />
+                  <Input value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="Add GSTIN" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">Update company details during setup.</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Bank Name</Label>
+                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Bank Name" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Name</Label>
+                  <Input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Account Name" />
+                </div>
+                <div className="space-y-2">
+                  <Label>IFSC</Label>
+                  <Input value={ifsc} onChange={(e) => setIfsc(e.target.value)} placeholder="IFSC Code" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                These fields are editable on this page but not saved yet.
+              </p>
             </CardContent>
           </Card>
 

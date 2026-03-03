@@ -646,6 +646,13 @@ export default function NewQuotation() {
                         <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
+                      <Input
+                        placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
+                        value={issuerTaxIdValue}
+                        onChange={(e) => setIssuerTaxIdValue(e.target.value)}
+                      />
+                    ) : null}
                   </div>
                   {issuerTaxIdType === OTHER_TAX_ID_OPTION && (
                     <Input
@@ -654,13 +661,6 @@ export default function NewQuotation() {
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
                   )}
-                  {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
-                    <Input
-                      placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
-                      value={issuerTaxIdValue}
-                      onChange={(e) => setIssuerTaxIdValue(e.target.value)}
-                    />
-                  ) : null}
                   {!isInlineLabels && (
                     <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                   )}
@@ -805,6 +805,14 @@ export default function NewQuotation() {
                               <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
                             </SelectContent>
                           </Select>
+                          {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
+                            <Input
+                              id="taxIdValue"
+                              placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
+                              value={taxIdValue}
+                              onChange={(e) => setTaxIdValue(e.target.value)}
+                            />
+                          ) : null}
                         </div>
                         {taxIdName === OTHER_TAX_ID_OPTION && (
                           <Input
@@ -813,14 +821,6 @@ export default function NewQuotation() {
                             onChange={(e) => setClientTaxIdCustomType(e.target.value)}
                           />
                         )}
-                        {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
-                          <Input
-                            id="taxIdValue"
-                            placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
-                            value={taxIdValue}
-                            onChange={(e) => setTaxIdValue(e.target.value)}
-                          />
-                        ) : null}
                         {!isInlineLabels && (
                           <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                         )}

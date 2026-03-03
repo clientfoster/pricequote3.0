@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { COMPANY_INFO } from '@/types/quotation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -69,51 +68,55 @@ export default function Settings() {
 
       {/* Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-5 sm:space-y-6">
 
-          {/* Company Info Placeholder */}
-          <Card>
+          {/* Company Info */}
+          <Card className="shadow-card">
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-accent/10">
                   <Building2 className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <CardTitle>Company Information</CardTitle>
-                  <CardDescription>Your business details for quotations.</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Company Information</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    Your business details for quotations.
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="md:col-span-2 space-y-2">
                   <Label>Company Name</Label>
-                  <Input defaultValue={COMPANY_INFO.name} disabled />
+                  <Input defaultValue={user?.tenantName || ''} placeholder="Company Name" disabled />
                 </div>
                 <div className="space-y-2">
                   <Label>GSTIN</Label>
-                  <Input defaultValue={COMPANY_INFO.gstin} disabled />
+                  <Input defaultValue="" placeholder="Add GSTIN" disabled />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">Contact admin to update company details.</p>
+              <p className="text-xs text-muted-foreground">Update company details during setup.</p>
             </CardContent>
           </Card>
 
           {/* Profile Settings */}
-          <Card>
+          <Card className="shadow-card">
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-accent/10">
                   <UserIcon className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <CardTitle>Profile</CardTitle>
-                  <CardDescription>Your personal account settings.</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Profile</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    Your personal account settings.
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Full Name</Label>
                   <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" />
@@ -122,7 +125,7 @@ export default function Settings() {
                   <Label>Email</Label>
                   <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />
                 </div>
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>New Password</Label>
                     <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to keep current" />
@@ -147,15 +150,17 @@ export default function Settings() {
           </Card>
 
           {/* Notifications (Mock) */}
-          <Card>
+          <Card className="shadow-card">
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-accent/10">
                   <Bell className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <CardTitle>Notifications</CardTitle>
-                  <CardDescription>Configure how you receive updates.</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Notifications</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    Configure how you receive updates.
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>

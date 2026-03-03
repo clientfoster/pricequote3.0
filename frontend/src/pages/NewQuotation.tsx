@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload, MoreVertical, LogIn } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from '@/types/quotation';
 import { generateQuotationPDF, getQuotationPDFBlob } from '@/lib/pdfGenerator';
 import { toast } from 'sonner';
@@ -495,24 +496,46 @@ export default function NewQuotation() {
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-              {isPublicQuote && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
-                  className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground sm:text-sm sm:underline"
-                >
-                  Login
-                </button>
-              )}
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <div className="flex w-full items-center gap-2 sm:w-auto">
                 <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
                   <Download className="w-4 h-4" />
                   Download PDF
                 </Button>
-                <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-9 w-9 sm:hidden" aria-label="More actions">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={handleSaveDraft} disabled={isSubmitting}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Draft
+                    </DropdownMenuItem>
+                    {isPublicQuote && (
+                      <DropdownMenuItem onClick={() => navigate('/login', { state: { from: '/dashboard' } })}>
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Login
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="hidden sm:flex sm:items-center sm:gap-2">
+                <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
                   <Save className="w-4 h-4" />
                   Save Draft
                 </Button>
+                {isPublicQuote && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                    className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                  >
+                    Login
+                  </button>
+                )}
               </div>
             </div>
           </div>

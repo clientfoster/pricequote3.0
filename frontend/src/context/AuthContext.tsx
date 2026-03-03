@@ -9,6 +9,8 @@ interface User {
     role: 'SuperAdmin' | 'Employee';
     profileImage?: string;
     token: string;
+    tenantId?: string;
+    tenantName?: string;
 }
 
 interface AuthContextType {

@@ -243,7 +243,13 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     footerContentY = 20;
   }
 
-  const showFooterDetails = Boolean(quotation.issuerCompanyName || quotation.issuerTaxIdValue);
+  const showFooterDetails = Boolean(
+    quotation.issuerCompanyName ||
+      quotation.issuerTaxIdValue ||
+      quotation.issuerBankName ||
+      quotation.issuerAccountName ||
+      quotation.issuerIfsc,
+  );
   if (showFooterDetails) {
     doc.setDrawColor(...COLORS.lightGray);
     doc.line(margin, footerContentY, pageWidth - margin, footerContentY);
@@ -270,13 +276,26 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     // Bank Details
     let bankY = footerContentY;
     const bankX = pageWidth - margin - colWidth;
-    addText('Bank Details', bankX, bankY, 9, 'bold', COLORS.primary);
-    bankY += 5;
-    addText(`Bank: ${COMPANY_INFO.bankName}`, bankX, bankY, 8, 'normal', COLORS.text);
-    bankY += 4;
-    addText(`Account: ${COMPANY_INFO.name}`, bankX, bankY, 8, 'normal', COLORS.text);
-    bankY += 4;
-    addText(`IFSC: ${COMPANY_INFO.ifsc}`, bankX, bankY, 8, 'normal', COLORS.text);
+    const bankName = quotation.issuerBankName;
+    const accountName = quotation.issuerAccountName;
+    const ifsc = quotation.issuerIfsc;
+    const hasBank = Boolean(bankName || accountName || ifsc);
+    if (hasBank) {
+      addText('Bank Details', bankX, bankY, 9, 'bold', COLORS.primary);
+      bankY += 5;
+      if (bankName) {
+        addText(`Bank: ${bankName}`, bankX, bankY, 8, 'normal', COLORS.text);
+        bankY += 4;
+      }
+      if (accountName) {
+        addText(`Account: ${accountName}`, bankX, bankY, 8, 'normal', COLORS.text);
+        bankY += 4;
+      }
+      if (ifsc) {
+        addText(`IFSC: ${ifsc}`, bankX, bankY, 8, 'normal', COLORS.text);
+        bankY += 4;
+      }
+    }
   }
 
   // --- Global Footer (Page Number / Tagline) ---

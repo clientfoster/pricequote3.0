@@ -15,6 +15,9 @@ export interface Quotation {
   issuerTaxIdValue?: string;
   issuerLogoUrl?: string;
   issuerLogoDataUrl?: string;
+  issuerBankName?: string;
+  issuerAccountName?: string;
+  issuerIfsc?: string;
   clientName: string;
   companyName: string;
   contactNumber: string;

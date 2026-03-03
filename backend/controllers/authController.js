@@ -4,6 +4,11 @@ const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const getTenantName = async (tenantId) => {
+    if (!tenantId) return undefined;
+    const tenant = await Tenant.findById(tenantId);
+    return tenant?.name;
+};
 
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
@@ -15,6 +20,7 @@ const authUser = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
 
     if (user && (await user.matchPassword(password))) {
+        const tenantName = await getTenantName(user.tenantId);
         res.json({
             _id: user._id,
             name: user.name,
@@ -22,6 +28,7 @@ const authUser = asyncHandler(async (req, res) => {
             role: user.role,
             profileImage: user.profileImage,
             tenantId: user.tenantId,
+            tenantName,
             token: generateToken(user._id),
         });
     } else {
@@ -52,12 +59,15 @@ const acceptInvite = asyncHandler(async (req, res) => {
     user.isVerified = true;
 
     await user.save();
+    const tenantName = await getTenantName(user.tenantId);
 
     res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        tenantId: user.tenantId,
+        tenantName,
         token: generateToken(user._id),
     });
 });
@@ -89,6 +99,7 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
             role: user.role,
             profileImage: user.profileImage,
             tenantId: user.tenantId,
+            tenantName: tenant.name,
             token: generateToken(user._id),
         });
     } else {

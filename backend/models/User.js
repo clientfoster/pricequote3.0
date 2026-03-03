@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = mongoose.Schema({
+    tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Tenant',
+    },
     name: {
         type: String,
         required: true,
@@ -38,6 +43,8 @@ const userSchema = mongoose.Schema({
 }, {
     timestamps: true,
 });
+
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
     if (!this.password) return false;

@@ -13,7 +13,7 @@ const inviteUser = asyncHandler(async (req, res) => {
     const { name, email, role } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    const userExists = await User.findOne({ email: normalizedEmail });
+    const userExists = await User.findOne({ email: normalizedEmail, tenantId: req.user.tenantId });
 
     if (userExists) {
         res.status(400);
@@ -25,6 +25,7 @@ const inviteUser = asyncHandler(async (req, res) => {
     const invitationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
     const user = await User.create({
+        tenantId: req.user.tenantId,
         name,
         email: normalizedEmail,
         role: role || 'Employee',
@@ -69,7 +70,7 @@ const inviteUser = asyncHandler(async (req, res) => {
 // @route   GET /api/users
 // @access  Private/SuperAdmin
 const getUsers = asyncHandler(async (req, res) => {
-    const users = await User.find({});
+    const users = await User.find({ tenantId: req.user.tenantId });
     res.json(users);
 });
 
@@ -77,7 +78,7 @@ const getUsers = asyncHandler(async (req, res) => {
 // @route   DELETE /api/users/:id
 // @access  Private/SuperAdmin
 const deleteUser = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (user) {
         if (user.role === 'SuperAdmin') {

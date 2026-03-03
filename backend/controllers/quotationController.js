@@ -43,6 +43,7 @@ const createQuotation = asyncHandler(async (req, res) => {
     } = req.body;
 
     const quotation = new Quotation({
+        tenantId: req.user.tenantId,
         user: req.user._id,
         quoteNumber,
         issuerCompanyName,
@@ -92,10 +93,11 @@ const createQuotation = asyncHandler(async (req, res) => {
             clientQuery = { name: clientName, companyName: companyName };
         }
 
-        const existingClient = await Client.findOne(clientQuery);
+        const existingClient = await Client.findOne({ ...clientQuery, tenantId: req.user.tenantId });
 
         if (!existingClient) {
             await Client.create({
+                tenantId: req.user.tenantId,
                 user: req.user._id, // Assign to current user? Or is Client global? Check Client model.
                 name: clientName,
                 companyName: companyName,
@@ -176,9 +178,9 @@ const createQuotation = asyncHandler(async (req, res) => {
 // @route   GET /api/quotations
 // @access  Private
 const getQuotations = asyncHandler(async (req, res) => {
-    let query = {};
+    let query = { tenantId: req.user.tenantId };
     if (req.user.role !== 'SuperAdmin') {
-        query = { user: req.user._id };
+        query = { tenantId: req.user.tenantId, user: req.user._id };
     }
     const quotations = await Quotation.find(query).populate('user', 'name email').sort({ createdAt: -1 });
     res.json(quotations);
@@ -188,7 +190,7 @@ const getQuotations = asyncHandler(async (req, res) => {
 // @route   GET /api/quotations/:id
 // @access  Private
 const getQuotationById = asyncHandler(async (req, res) => {
-    const quotation = await Quotation.findById(req.params.id).populate('user', 'name email');
+    const quotation = await Quotation.findOne({ _id: req.params.id, tenantId: req.user.tenantId }).populate('user', 'name email');
 
     if (quotation) {
         // Access Control: SuperAdmin or Owner only
@@ -233,7 +235,7 @@ const updateQuotation = asyncHandler(async (req, res) => {
         status
     } = req.body;
 
-    const quotation = await Quotation.findById(req.params.id);
+    const quotation = await Quotation.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (quotation) {
         quotation.clientName = clientName;
@@ -332,9 +334,9 @@ const updateQuotation = asyncHandler(async (req, res) => {
 // @route   GET /api/quotations/stats
 // @access  Private
 const getDashboardStats = asyncHandler(async (req, res) => {
-    let query = {};
+    let query = { tenantId: req.user.tenantId };
     if (req.user.role !== 'SuperAdmin') {
-        query = { user: req.user._id };
+        query = { tenantId: req.user.tenantId, user: req.user._id };
     }
 
     const quotations = await Quotation.find(query);
@@ -364,7 +366,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 // @route   DELETE /api/quotations/:id
 // @access  Private
 const deleteQuotation = asyncHandler(async (req, res) => {
-    const quotation = await Quotation.findById(req.params.id);
+    const quotation = await Quotation.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (quotation) {
         await quotation.deleteOne();

@@ -21,6 +21,7 @@ const createClient = asyncHandler(async (req, res) => {
     const normalizedTaxIdValue = clean(taxIdValue) || clean(gstin) || '';
 
     const client = new Client({
+        tenantId: req.user.tenantId,
         user: req.user._id,
         name,
         companyName,
@@ -41,7 +42,7 @@ const createClient = asyncHandler(async (req, res) => {
 // @route   GET /api/clients
 // @access  Private
 const getClients = asyncHandler(async (req, res) => {
-    const clients = await Client.find({});
+    const clients = await Client.find({ tenantId: req.user.tenantId });
     res.json(clients);
 });
 
@@ -61,7 +62,7 @@ const updateClient = asyncHandler(async (req, res) => {
         gstin,
     } = req.body;
 
-    const client = await Client.findById(req.params.id);
+    const client = await Client.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (client) {
         client.name = name || client.name;
@@ -89,7 +90,7 @@ const updateClient = asyncHandler(async (req, res) => {
 // @route   DELETE /api/clients/:id
 // @access  Private
 const deleteClient = asyncHandler(async (req, res) => {
-    const client = await Client.findById(req.params.id);
+    const client = await Client.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (client) {
         await client.deleteOne();

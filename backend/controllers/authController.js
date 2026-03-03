@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const generateToken = require('../utils/generateToken');
 const User = require('../models/User');
+const Tenant = require('../models/Tenant');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
@@ -20,6 +21,7 @@ const authUser = asyncHandler(async (req, res) => {
             email: user.email,
             role: user.role,
             profileImage: user.profileImage,
+            tenantId: user.tenantId,
             token: generateToken(user._id),
         });
     } else {
@@ -64,18 +66,14 @@ const acceptInvite = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/setup
 // @access  Public
 const setupSuperAdmin = asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, companyName } = req.body;
     const normalizedEmail = normalizeEmail(email);
-
-    // Check if any SuperAdmin exists
-    const adminExists = await User.findOne({ role: 'SuperAdmin' });
-
-    if (adminExists) {
-        res.status(400);
-        throw new Error('Super Admin already exists. Please login.');
-    }
+    const tenant = await Tenant.create({
+        name: companyName || `${name}'s Company`,
+    });
 
     const user = await User.create({
+        tenantId: tenant._id,
         name,
         email: normalizedEmail,
         password,
@@ -90,6 +88,7 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
             email: user.email,
             role: user.role,
             profileImage: user.profileImage,
+            tenantId: user.tenantId,
             token: generateToken(user._id),
         });
     } else {

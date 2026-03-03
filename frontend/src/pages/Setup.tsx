@@ -10,6 +10,7 @@ import api from '@/lib/api';
 export default function Setup() {
     const navigate = useNavigate();
     const [name, setName] = useState('');
+    const [companyName, setCompanyName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,7 +32,7 @@ export default function Setup() {
         setIsLoading(true);
 
         try {
-            await api.post('/auth/setup', { name, email, password });
+            await api.post('/auth/setup', { name, email, password, companyName });
             toast.success('Super Admin created successfully! Please login.');
             navigate('/login');
         } catch (error: any) {
@@ -50,6 +51,17 @@ export default function Setup() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="companyName">Company Name</Label>
+                            <Input
+                                id="companyName"
+                                type="text"
+                                placeholder="Your Business Name"
+                                value={companyName}
+                                onChange={(e) => setCompanyName(e.target.value)}
+                                required
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="name">Full Name</Label>
                             <Input

@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const clientSchema = mongoose.Schema({
+    tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Tenant',
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,

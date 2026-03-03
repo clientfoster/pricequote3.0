@@ -482,22 +482,43 @@ export default function NewQuotation() {
       {/* Header */}
       <header className="sticky top-14 md:top-0 z-10 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-lg font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                No login required. Fill details and download instantly.
-              </p>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex-1">
+                <h1 className="text-lg font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  No login required. Fill details and download instantly.
+                </p>
+              </div>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
+              {isPublicQuote && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                >
+                  Login
+                </Button>
+              )}
+              <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
+              <Button className="w-full sm:w-auto" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                <Save className="w-4 h-4" />
+                Save Draft
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 pb-28 sm:pb-6">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="flex w-full flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
@@ -1091,32 +1112,7 @@ export default function NewQuotation() {
           </div>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/80 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:hidden">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2">
-          <Button className="w-full" variant="accent" onClick={handleDownloadPDF}>
-            <Download className="w-4 h-4" />
-            Download PDF
-          </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-              <Save className="w-4 h-4" />
-              Save Draft
-            </Button>
-            {isPublicQuote ? (
-              <Button
-                variant="secondary"
-                onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
-              >
-                Login
-              </Button>
-            ) : (
-              <Button variant="secondary" onClick={() => navigate('/dashboard')}>
-                Dashboard
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
+

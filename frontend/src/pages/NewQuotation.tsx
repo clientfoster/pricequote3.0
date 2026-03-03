@@ -687,7 +687,7 @@ export default function NewQuotation() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Left Column - Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="order-1 lg:col-span-2 space-y-6">
               {/* Client Details */}
               <Card className="shadow-sm">
                 <CardHeader className="border-b border-border/60 bg-muted/30">
@@ -1042,9 +1042,9 @@ export default function NewQuotation() {
             </div>
 
             {/* Right Column - Summary */}
-            <div className="space-y-6">
+            <div className="order-2 space-y-6">
               {/* Pricing Summary */}
-              <Card className="shadow-sm xl:sticky xl:top-24">
+              <Card className="shadow-card xl:sticky xl:top-24">
                 <CardHeader className="border-b border-border/60 bg-muted/30">
                   <CardTitle>Pricing Summary</CardTitle>
                   <CardDescription>Client-facing totals are shown in the selected billing currency.</CardDescription>
@@ -1119,7 +1119,7 @@ export default function NewQuotation() {
                   {/* Total */}
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Total Payable</span>
-                    <span className="text-xl font-display font-bold text-accent">
+                    <span className="text-2xl font-display font-bold text-success">
                       {formatCurrency(totalPayable)}
                     </span>
                   </div>

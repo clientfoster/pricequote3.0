@@ -6,9 +6,9 @@
 
 @layer base {
   :root {
-    /* Professional SaaS color palette */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Mobile-first SaaS palette */
+    --background: 210 40% 98%; /* #F8FAFC */
+    --foreground: 222 47% 11%; /* #0F172A */
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -16,19 +16,18 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Deep navy primary */
-    --primary: 222 47% 20%;
+    /* Primary */
+    --primary: 221 83% 53%; /* #2563EB */
     --primary-foreground: 210 40% 98%;
 
-    /* Cool gray secondary */
-    --secondary: 215 20% 95%;
+    --secondary: 214 32% 91%;
     --secondary-foreground: 222 47% 11%;
 
-    --muted: 215 20% 94%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    /* Teal accent for CTAs and highlights */
-    --accent: 173 58% 39%;
+    /* Accent / success */
+    --accent: 160 84% 39%; /* #10B981 */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -42,26 +41,26 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 173 58% 39%;
+    --border: 214 32% 83%; /* #CBD5E1 */
+    --input: 214 32% 83%; /* #CBD5E1 */
+    --ring: 221 83% 53%;
 
     --radius: 0.625rem;
 
-    /* Sidebar - Professional dark */
+    /* Sidebar - Dark */
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 215 20% 85%;
-    --sidebar-primary: 173 58% 45%;
+    --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 40% 18%;
     --sidebar-accent-foreground: 215 20% 95%;
     --sidebar-border: 222 40% 20%;
-    --sidebar-ring: 173 58% 45%;
+    --sidebar-ring: 221 83% 53%;
     --sidebar-muted: 215 16% 55%;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(222 47% 20%) 0%, hsl(222 47% 30%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(173 58% 39%) 0%, hsl(173 58% 50%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(221 83% 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(160 84% 45%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 99%) 100%);
 
     /* Shadows */
@@ -126,6 +125,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {

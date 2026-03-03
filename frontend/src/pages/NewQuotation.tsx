@@ -937,8 +937,13 @@ export default function NewQuotation() {
                         Add billable services with clear descriptions and rates. Totals update instantly.
                       </CardDescription>
                     </div>
-                    <Button className="order-2 w-full sm:order-3 sm:w-auto" variant="outline" size="sm" onClick={addLineItem}>
-                      <Plus className="w-4 h-4" />
+                    <Button
+                      className="order-2 w-full sm:order-3 sm:w-auto text-primary font-semibold"
+                      variant="outline"
+                      size="sm"
+                      onClick={addLineItem}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
                       Add Item
                     </Button>
                   </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload, MoreVertical, LogIn } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload, MoreVertical, LogIn, Calendar } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -646,13 +646,6 @@ export default function NewQuotation() {
                         <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
                       </SelectContent>
                     </Select>
-                    {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
-                      <Input
-                        placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
-                        value={issuerTaxIdValue}
-                        onChange={(e) => setIssuerTaxIdValue(e.target.value)}
-                      />
-                    ) : null}
                   </div>
                   {issuerTaxIdType === OTHER_TAX_ID_OPTION && (
                     <Input
@@ -661,27 +654,42 @@ export default function NewQuotation() {
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
                   )}
+                  {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
+                    <Input
+                      placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
+                      value={issuerTaxIdValue}
+                      onChange={(e) => setIssuerTaxIdValue(e.target.value)}
+                    />
+                  ) : null}
                   {!isInlineLabels && (
                     <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                   )}
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
                   {!isInlineLabels && <Label htmlFor="quoteDate">Quote Date</Label>}
-                  <Input
-                    id="quoteDate"
-                    type="date"
-                    value={quoteDate}
-                    onChange={(e) => setQuoteDate(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="quoteDate"
+                      type="date"
+                      className="pr-10"
+                      value={quoteDate}
+                      onChange={(e) => setQuoteDate(e.target.value)}
+                    />
+                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
                   {!isInlineLabels && <Label htmlFor="validUntil">Valid Till</Label>}
-                  <Input
-                    id="validUntil"
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="validUntil"
+                      type="date"
+                      className="pr-10"
+                      value={validUntil}
+                      onChange={(e) => setValidUntil(e.target.value)}
+                    />
+                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
                   {!isInlineLabels && <Label htmlFor="quoteNumber">Quotation No</Label>}
@@ -797,14 +805,6 @@ export default function NewQuotation() {
                               <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
                             </SelectContent>
                           </Select>
-                          {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
-                            <Input
-                              id="taxIdValue"
-                              placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
-                              value={taxIdValue}
-                              onChange={(e) => setTaxIdValue(e.target.value)}
-                            />
-                          ) : null}
                         </div>
                         {taxIdName === OTHER_TAX_ID_OPTION && (
                           <Input
@@ -813,6 +813,14 @@ export default function NewQuotation() {
                             onChange={(e) => setClientTaxIdCustomType(e.target.value)}
                           />
                         )}
+                        {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
+                          <Input
+                            id="taxIdValue"
+                            placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
+                            value={taxIdValue}
+                            onChange={(e) => setTaxIdValue(e.target.value)}
+                          />
+                        ) : null}
                         {!isInlineLabels && (
                           <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                         )}

@@ -10,14 +10,19 @@ connectDB();
 
 const app = express();
 
-const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:8080'];
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:8080',
+].filter(Boolean);
 const localhostRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const vercelPreviewRegex = /^https?:\/\/([a-z0-9-]+-)?[a-z0-9-]+\.vercel\.app$/i;
 
 app.use(cors({
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1 && !localhostRegex.test(origin)) {
+        if (allowedOrigins.indexOf(origin) === -1 && !localhostRegex.test(origin) && !vercelPreviewRegex.test(origin)) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
             return callback(new Error(msg), false);
         }

@@ -224,6 +224,9 @@ export default function NewQuotation() {
   };
 
   const handleSaveDraft = async () => {
+    if (!validateCustomTaxIds()) {
+      return;
+    }
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
       return;
@@ -248,6 +251,9 @@ export default function NewQuotation() {
   };
 
   const handleSend = async () => {
+    if (!validateCustomTaxIds()) {
+      return;
+    }
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
       return;
@@ -374,6 +380,9 @@ export default function NewQuotation() {
   };
 
   const handleDownloadPDF = () => {
+    if (!validateCustomTaxIds()) {
+      return;
+    }
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
       return;
@@ -448,6 +457,24 @@ export default function NewQuotation() {
     } catch {
       toast.error('Failed to load client logo preview');
     }
+  };
+
+  const validateCustomTaxIds = () => {
+    const issuerOtherSelected = issuerTaxIdType === OTHER_TAX_ID_OPTION;
+    const issuerHasAny = issuerTaxIdCustomType.trim() || issuerTaxIdValue.trim();
+    if (issuerOtherSelected && issuerHasAny && (!issuerTaxIdCustomType.trim() || !issuerTaxIdValue.trim())) {
+      toast.error('Enter both Company Tax ID type and value, or leave both empty.');
+      return false;
+    }
+
+    const clientOtherSelected = taxIdName === OTHER_TAX_ID_OPTION;
+    const clientHasAny = clientTaxIdCustomType.trim() || taxIdValue.trim();
+    if (clientOtherSelected && clientHasAny && (!clientTaxIdCustomType.trim() || !taxIdValue.trim())) {
+      toast.error('Enter both Client Tax ID type and value, or leave both empty.');
+      return false;
+    }
+
+    return true;
   };
 
   useEffect(() => {
@@ -572,24 +599,23 @@ export default function NewQuotation() {
             </div>
           </div>
           {/* Company Details */}
-            <Card className="border-primary/20 bg-primary/5 shadow-sm">
-              <CardHeader className="border-b border-primary/10 bg-background/60">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="includeCompanyDetails"
-                    checked={includeCompanyName || includeGstin}
-                    onCheckedChange={(checked) => {
-                      const next = checked === true;
-                      setIncludeCompanyName(next);
-                      setIncludeGstin(next);
-                    }}
-                  />
-                <CardTitle>
-                  <Label htmlFor="includeCompanyDetails" className="cursor-pointer">
-                    Company Details
-                  </Label>
-                </CardTitle>
+          <Card className="border-primary/20 bg-primary/5 shadow-sm">
+            <CardHeader className="border-b border-primary/10 bg-background/60">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="includeCompanyDetails"
+                  checked={includeCompanyName || includeGstin}
+                  onCheckedChange={(checked) => {
+                    const next = checked === true;
+                    setIncludeCompanyName(next);
+                    setIncludeGstin(next);
+                  }}
+                />
+                <CardTitle className="text-lg sm:text-xl">Company Details</CardTitle>
               </div>
+              <CardDescription className="text-sm text-muted-foreground">
+                Company branding and tax identity used on the quotation.
+              </CardDescription>
             </CardHeader>
             {(includeCompanyName || includeGstin) && (
             <CardContent className="py-4 space-y-4">
@@ -698,14 +724,16 @@ export default function NewQuotation() {
                         checked={includeClientDetails}
                         onCheckedChange={(checked) => setIncludeClientDetails(checked === true)}
                       />
-                      <CardTitle>
-                        <Label htmlFor="includeClientDetails" className="cursor-pointer">
-                          Client Details <span className="text-xs text-muted-foreground">(Optional)</span>
-                        </Label>
+                      <CardTitle className="text-lg sm:text-xl">
+                        Client Details <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
                       </CardTitle>
                     </div>
                   </div>
-                  {!isInlineLabels && <CardDescription>Enter the client information for this quotation.</CardDescription>}
+                  {!isInlineLabels && (
+                    <CardDescription className="text-sm text-muted-foreground">
+                      Enter the client information for this quotation.
+                    </CardDescription>
+                  )}
                 </CardHeader>
                 {includeClientDetails && (
                   <CardContent className="space-y-4">
@@ -890,10 +918,10 @@ export default function NewQuotation() {
                 <CardHeader className="border-b border-border/60 bg-muted/30">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-2">
-                      <CardTitle>Services & Pricing</CardTitle>
+                      <CardTitle className="text-lg sm:text-xl">Services & Pricing</CardTitle>
                     </div>
                     <div className="order-3 sm:order-2 sm:flex-1">
-                      <CardDescription>
+                      <CardDescription className="text-sm text-muted-foreground">
                         Add billable services with clear descriptions and rates. Totals update instantly.
                       </CardDescription>
                     </div>

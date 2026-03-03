@@ -21,7 +21,7 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   if (user?.role === 'Employee') {
-    return <Navigate to="/employee-dashboard" replace />;
+    return <Navigate to={`/employee/${user?._id}/dashboard`} replace />;
   }
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({

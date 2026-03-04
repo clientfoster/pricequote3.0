@@ -961,18 +961,18 @@ export default function NewQuotation() {
                       key={item.id}
                       className="animate-fade-in space-y-4 rounded-xl border border-border/70 bg-background/95 p-4 shadow-sm ring-1 ring-transparent transition hover:ring-border"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
                             Line {index + 1}
                           </span>
                           {item.service && (
-                            <span className="text-sm font-medium text-foreground truncate max-w-[180px]">
+                            <span className="text-sm font-medium text-foreground truncate max-w-[220px]">
                               {item.service}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 sm:justify-end">
                           <Button
                             variant="ghost"
                             size="icon"

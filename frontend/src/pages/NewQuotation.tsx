@@ -70,8 +70,6 @@ export default function NewQuotation() {
   const [issuerTaxIdCustomType, setIssuerTaxIdCustomType] = useState('');
   const [issuerTaxIdValue, setIssuerTaxIdValue] = useState('');
   const [issuerBankName, setIssuerBankName] = useState('');
-  const [issuerAccountName, setIssuerAccountName] = useState('');
-  const [issuerIfsc, setIssuerIfsc] = useState('');
   const [issuerLogoFile, setIssuerLogoFile] = useState<File | null>(null);
   const [issuerLogoPreview, setIssuerLogoPreview] = useState<string>('');
   const [clientName, setClientName] = useState('');
@@ -276,8 +274,6 @@ export default function NewQuotation() {
         issuerTaxIdValue: apiPayload.issuerTaxIdValue,
         issuerLogoUrl,
         issuerBankName: apiPayload.issuerBankName,
-        issuerAccountName: apiPayload.issuerAccountName,
-        issuerIfsc: apiPayload.issuerIfsc,
         issuerLogoDataUrl: issuerLogoPreview || undefined,
         clientName: apiPayload.clientName,
         companyName: apiPayload.companyName,
@@ -359,8 +355,6 @@ export default function NewQuotation() {
       issuerTaxIdType: resolvedIssuerTaxIdType || undefined,
       issuerTaxIdValue: issuerTaxIdValue.trim() || undefined,
       issuerBankName: issuerBankName.trim() || undefined,
-      issuerAccountName: issuerAccountName.trim() || undefined,
-      issuerIfsc: issuerIfsc.trim() || undefined,
       clientName,
       companyName,
       contactNumber,
@@ -406,8 +400,6 @@ export default function NewQuotation() {
       issuerTaxIdValue: issuerTaxIdValue.trim() || undefined,
       issuerLogoDataUrl: issuerLogoPreview || undefined,
       issuerBankName: issuerBankName.trim() || undefined,
-      issuerAccountName: issuerAccountName.trim() || undefined,
-      issuerIfsc: issuerIfsc.trim() || undefined,
       clientName,
       companyName,
       quoteDate: new Date(quoteDate),
@@ -646,10 +638,10 @@ export default function NewQuotation() {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Select value={issuerTaxIdType || '__EMPTY__'} onValueChange={(value) => setIssuerTaxIdType(value === '__EMPTY__' ? '' : value)}>
                       <SelectTrigger className="w-full sm:w-[160px]">
-                        <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
+                        <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Choose Tax ID Type'} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
+                        <SelectItem value="__EMPTY__">Choose Tax ID Type</SelectItem>
                         {TAX_ID_TYPE_OPTIONS.map((item) => (
                           <SelectItem key={item} value={item}>
                             {item}
@@ -684,24 +676,6 @@ export default function NewQuotation() {
                     placeholder={isInlineLabels ? 'Bank Name' : 'Enter bank name'}
                     value={issuerBankName}
                     onChange={(e) => setIssuerBankName(e.target.value)}
-                  />
-                </div>
-                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="issuerAccountName">Account Name</Label>}
-                  <Input
-                    id="issuerAccountName"
-                    placeholder={isInlineLabels ? 'Account Name' : 'Enter account name'}
-                    value={issuerAccountName}
-                    onChange={(e) => setIssuerAccountName(e.target.value)}
-                  />
-                </div>
-                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="issuerIfsc">IFSC</Label>}
-                  <Input
-                    id="issuerIfsc"
-                    placeholder={isInlineLabels ? 'IFSC Code' : 'Enter IFSC code'}
-                    value={issuerIfsc}
-                    onChange={(e) => setIssuerIfsc(e.target.value)}
                   />
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
@@ -832,10 +806,10 @@ export default function NewQuotation() {
                             onValueChange={(value) => setTaxIdName(value === '__EMPTY__' ? '' : value)}
                           >
                             <SelectTrigger id="taxIdName" className="w-full sm:w-[160px]">
-                              <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
+                              <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Choose Tax ID Type'} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
+                              <SelectItem value="__EMPTY__">Choose Tax ID Type</SelectItem>
                               {TAX_ID_TYPE_OPTIONS.map((item) => (
                                 <SelectItem key={item} value={item}>
                                   {item}
@@ -1202,8 +1176,6 @@ export default function NewQuotation() {
                     <p>- Timeline: {COMPANY_INFO.timeline}</p>
                     <p>- {COMPANY_INFO.paymentTerms}</p>
                     {issuerBankName && <p>- Bank: {issuerBankName}</p>}
-                    {issuerAccountName && <p>- Account: {issuerAccountName}</p>}
-                    {issuerIfsc && <p>- IFSC: {issuerIfsc}</p>}
                   </div>
                 </CardContent>
               </Card>

@@ -28,8 +28,6 @@ const quotationSchema = mongoose.Schema({
     issuerTaxIdValue: { type: String },
     issuerLogoUrl: { type: String },
     issuerBankName: { type: String },
-    issuerAccountName: { type: String },
-    issuerIfsc: { type: String },
     clientName: { type: String },
     companyName: { type: String },
     contactNumber: { type: String },

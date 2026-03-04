@@ -246,9 +246,7 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   const showFooterDetails = Boolean(
     quotation.issuerCompanyName ||
       quotation.issuerTaxIdValue ||
-      quotation.issuerBankName ||
-      quotation.issuerAccountName ||
-      quotation.issuerIfsc,
+      quotation.issuerBankName,
   );
   if (showFooterDetails) {
     doc.setDrawColor(...COLORS.lightGray);
@@ -277,22 +275,12 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     let bankY = footerContentY;
     const bankX = pageWidth - margin - colWidth;
     const bankName = quotation.issuerBankName;
-    const accountName = quotation.issuerAccountName;
-    const ifsc = quotation.issuerIfsc;
-    const hasBank = Boolean(bankName || accountName || ifsc);
+    const hasBank = Boolean(bankName);
     if (hasBank) {
       addText('Bank Details', bankX, bankY, 9, 'bold', COLORS.primary);
       bankY += 5;
       if (bankName) {
         addText(`Bank: ${bankName}`, bankX, bankY, 8, 'normal', COLORS.text);
-        bankY += 4;
-      }
-      if (accountName) {
-        addText(`Account: ${accountName}`, bankX, bankY, 8, 'normal', COLORS.text);
-        bankY += 4;
-      }
-      if (ifsc) {
-        addText(`IFSC: ${ifsc}`, bankX, bankY, 8, 'normal', COLORS.text);
         bankY += 4;
       }
     }

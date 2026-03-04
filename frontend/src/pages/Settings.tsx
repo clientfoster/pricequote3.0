@@ -19,8 +19,6 @@ export default function Settings() {
   const [companyName, setCompanyName] = useState('');
   const [gstin, setGstin] = useState('');
   const [bankName, setBankName] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [ifsc, setIfsc] = useState('');
 
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -106,14 +104,6 @@ export default function Settings() {
                 <div className="space-y-2">
                   <Label>Bank Name</Label>
                   <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Bank Name" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Account Name</Label>
-                  <Input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Account Name" />
-                </div>
-                <div className="space-y-2">
-                  <Label>IFSC</Label>
-                  <Input value={ifsc} onChange={(e) => setIfsc(e.target.value)} placeholder="IFSC Code" />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">

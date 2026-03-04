@@ -13,7 +13,6 @@ const createQuotation = asyncHandler(async (req, res) => {
         issuerTaxIdType,
         issuerTaxIdValue,
         issuerLogoUrl,
-        issuerBankName,
         clientName,
         companyName,
         contactNumber,
@@ -51,7 +50,6 @@ const createQuotation = asyncHandler(async (req, res) => {
         issuerTaxIdType,
         issuerTaxIdValue,
         issuerLogoUrl,
-        issuerBankName,
         clientName,
         companyName,
         contactNumber,
@@ -221,7 +219,6 @@ const updateQuotation = asyncHandler(async (req, res) => {
         issuerTaxIdType,
         issuerTaxIdValue,
         issuerLogoUrl,
-        issuerBankName,
         clientReferenceNo,
         clientAddress,
         clientLogoUrl,
@@ -249,7 +246,6 @@ const updateQuotation = asyncHandler(async (req, res) => {
         if (typeof issuerTaxIdType === 'string') quotation.issuerTaxIdType = issuerTaxIdType;
         if (typeof issuerTaxIdValue === 'string') quotation.issuerTaxIdValue = issuerTaxIdValue;
         if (typeof issuerLogoUrl === 'string') quotation.issuerLogoUrl = issuerLogoUrl;
-        if (typeof issuerBankName === 'string') quotation.issuerBankName = issuerBankName;
         if (typeof clientReferenceNo === 'string') quotation.clientReferenceNo = clientReferenceNo;
         if (typeof clientAddress === 'string') quotation.clientAddress = clientAddress;
         if (typeof clientLogoUrl === 'string') quotation.clientLogoUrl = clientLogoUrl;

@@ -245,8 +245,7 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
 
   const showFooterDetails = Boolean(
     quotation.issuerCompanyName ||
-      quotation.issuerTaxIdValue ||
-      quotation.issuerBankName,
+      quotation.issuerTaxIdValue,
   );
   if (showFooterDetails) {
     doc.setDrawColor(...COLORS.lightGray);
@@ -274,16 +273,7 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     // Bank Details
     let bankY = footerContentY;
     const bankX = pageWidth - margin - colWidth;
-    const bankName = quotation.issuerBankName;
-    const hasBank = Boolean(bankName);
-    if (hasBank) {
-      addText('Bank Details', bankX, bankY, 9, 'bold', COLORS.primary);
-      bankY += 5;
-      if (bankName) {
-        addText(`Bank: ${bankName}`, bankX, bankY, 8, 'normal', COLORS.text);
-        bankY += 4;
-      }
-    }
+    // Bank details removed
   }
 
   // --- Global Footer (Page Number / Tagline) ---

@@ -128,6 +128,11 @@
     overflow-x: hidden;
   }
 
+  html, #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   input[type="date"] {
     -webkit-appearance: none;
     appearance: none;

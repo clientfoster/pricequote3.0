@@ -18,7 +18,6 @@ export default function Settings() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [gstin, setGstin] = useState('');
-  const [bankName, setBankName] = useState('');
 
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -98,12 +97,6 @@ export default function Settings() {
                 <div className="space-y-2">
                   <Label>GSTIN</Label>
                   <Input value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="Add GSTIN" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Bank Name</Label>
-                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Bank Name" />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">

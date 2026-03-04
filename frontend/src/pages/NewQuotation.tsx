@@ -69,7 +69,6 @@ export default function NewQuotation() {
   const [issuerTaxIdType, setIssuerTaxIdType] = useState('');
   const [issuerTaxIdCustomType, setIssuerTaxIdCustomType] = useState('');
   const [issuerTaxIdValue, setIssuerTaxIdValue] = useState('');
-  const [issuerBankName, setIssuerBankName] = useState('');
   const [issuerLogoFile, setIssuerLogoFile] = useState<File | null>(null);
   const [issuerLogoPreview, setIssuerLogoPreview] = useState<string>('');
   const [clientName, setClientName] = useState('');
@@ -273,7 +272,6 @@ export default function NewQuotation() {
         issuerTaxIdType: apiPayload.issuerTaxIdType,
         issuerTaxIdValue: apiPayload.issuerTaxIdValue,
         issuerLogoUrl,
-        issuerBankName: apiPayload.issuerBankName,
         issuerLogoDataUrl: issuerLogoPreview || undefined,
         clientName: apiPayload.clientName,
         companyName: apiPayload.companyName,
@@ -354,7 +352,6 @@ export default function NewQuotation() {
       issuerCompanyName: issuerCompanyName.trim() || undefined,
       issuerTaxIdType: resolvedIssuerTaxIdType || undefined,
       issuerTaxIdValue: issuerTaxIdValue.trim() || undefined,
-      issuerBankName: issuerBankName.trim() || undefined,
       clientName,
       companyName,
       contactNumber,
@@ -399,7 +396,6 @@ export default function NewQuotation() {
         (issuerTaxIdType === OTHER_TAX_ID_OPTION ? issuerTaxIdCustomType.trim() : issuerTaxIdType) || undefined,
       issuerTaxIdValue: issuerTaxIdValue.trim() || undefined,
       issuerLogoDataUrl: issuerLogoPreview || undefined,
-      issuerBankName: issuerBankName.trim() || undefined,
       clientName,
       companyName,
       quoteDate: new Date(quoteDate),
@@ -670,15 +666,6 @@ export default function NewQuotation() {
                   {!isInlineLabels && (
                     <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                   )}
-                </div>
-                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="issuerBankName">Bank Name</Label>}
-                  <Input
-                    id="issuerBankName"
-                    placeholder={isInlineLabels ? 'Bank Name' : 'Enter bank name'}
-                    value={issuerBankName}
-                    onChange={(e) => setIssuerBankName(e.target.value)}
-                  />
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
                   {!isInlineLabels && <Label htmlFor="quoteDate">Quote Date</Label>}
@@ -1182,7 +1169,6 @@ export default function NewQuotation() {
                   <div className="pt-4 space-y-2 text-xs text-muted-foreground">
                     <p>- Timeline: {COMPANY_INFO.timeline}</p>
                     <p>- {COMPANY_INFO.paymentTerms}</p>
-                    {issuerBankName && <p>- Bank: {issuerBankName}</p>}
                   </div>
                 </CardContent>
               </Card>

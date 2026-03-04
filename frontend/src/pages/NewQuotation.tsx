@@ -650,7 +650,7 @@ export default function NewQuotation() {
                     </Select>
                     {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
                       <Input
-                        placeholder={isInlineLabels ? 'Tax ID Number' : 'e.g., 29ABCDE1234F1Z5'}
+                        placeholder={isInlineLabels ? 'Tax ID Number' : 'Tax ID Number'}
                         value={issuerTaxIdValue}
                         onChange={(e) => setIssuerTaxIdValue(e.target.value)}
                       />
@@ -815,7 +815,7 @@ export default function NewQuotation() {
                           {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
                             <Input
                               id="taxIdValue"
-                              placeholder={isInlineLabels ? 'Tax ID Number' : 'e.g., 29ABCDE1234F1Z5'}
+                              placeholder={isInlineLabels ? 'Tax ID Number' : 'Tax ID Number'}
                               value={taxIdValue}
                               onChange={(e) => setTaxIdValue(e.target.value)}
                             />

@@ -615,7 +615,9 @@ export default function NewQuotation() {
                     setIncludeGstin(next);
                   }}
                 />
-                <CardTitle className="text-lg sm:text-xl">Company Details</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Company Details <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+                </CardTitle>
               </div>
               <CardDescription className="text-sm text-muted-foreground">
                 Company branding and tax identity used on the quotation.
@@ -713,22 +715,27 @@ export default function NewQuotation() {
                     onChange={(e) => setQuoteNumber(e.target.value)}
                   />
                 </div>
-              </div>
-              <div>
-                <input
-                  ref={issuerLogoInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/webp"
-                  className="hidden"
-                  onChange={handleIssuerLogoSelect}
-                />
-                <Button variant="outline" type="button" onClick={() => issuerLogoInputRef.current?.click()}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Company Logo
-                </Button>
-                {issuerLogoFile && (
-                  <p className="mt-2 text-xs text-muted-foreground">{issuerLogoFile.name}</p>
-                )}
+                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label>Company Logo</Label>}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={issuerLogoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={handleIssuerLogoSelect}
+                    />
+                    <Button variant="outline" type="button" onClick={() => issuerLogoInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Logo
+                    </Button>
+                    {issuerLogoFile && (
+                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {issuerLogoFile.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
             )}

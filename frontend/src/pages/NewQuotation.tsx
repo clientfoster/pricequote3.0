@@ -623,8 +623,8 @@ export default function NewQuotation() {
             </CardHeader>
             {(includeCompanyName || includeGstin) && (
             <CardContent className="py-4 space-y-4">
-              <div className={`grid grid-cols-1 md:grid-cols-12 ${gridGapClass}`}>
-                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
+              <div className={`grid grid-cols-1 md:grid-cols-2 ${gridGapClass}`}>
+                <div className={fieldSpaceClass}>
                   {!isInlineLabels && <Label htmlFor="issuerCompanyName">Company Name</Label>}
                   <Input
                     id="issuerCompanyName"
@@ -633,11 +633,11 @@ export default function NewQuotation() {
                     onChange={(e) => setIssuerCompanyName(e.target.value)}
                   />
                 </div>
-                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
+                <div className={fieldSpaceClass}>
                   {!isInlineLabels && <Label>Primary Tax ID</Label>}
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Select value={issuerTaxIdType || '__EMPTY__'} onValueChange={(value) => setIssuerTaxIdType(value === '__EMPTY__' ? '' : value)}>
-                      <SelectTrigger className="w-full sm:w-[160px]">
+                      <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Choose Tax ID Type'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -669,7 +669,7 @@ export default function NewQuotation() {
                     <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                   )}
                 </div>
-                <div className={`md:col-span-3 ${fieldSpaceClass}`}>
+                <div className={fieldSpaceClass}>
                   {!isInlineLabels && <Label htmlFor="issuerBankName">Bank Name</Label>}
                   <Input
                     id="issuerBankName"
@@ -678,7 +678,7 @@ export default function NewQuotation() {
                     onChange={(e) => setIssuerBankName(e.target.value)}
                   />
                 </div>
-                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                <div className={fieldSpaceClass}>
                   {!isInlineLabels && <Label htmlFor="quoteDate">Quote Date</Label>}
                   <div className="relative">
                     <Input
@@ -691,7 +691,7 @@ export default function NewQuotation() {
                     <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   </div>
                 </div>
-                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                <div className={fieldSpaceClass}>
                   {!isInlineLabels && <Label htmlFor="validUntil">Valid Till</Label>}
                   <div className="relative">
                     <Input
@@ -704,7 +704,7 @@ export default function NewQuotation() {
                     <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   </div>
                 </div>
-                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                <div className={fieldSpaceClass}>
                   {!isInlineLabels && <Label htmlFor="quoteNumber">Quotation No</Label>}
                   <Input
                     id="quoteNumber"

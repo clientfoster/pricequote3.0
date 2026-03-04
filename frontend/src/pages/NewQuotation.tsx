@@ -39,7 +39,7 @@ const CURRENCY_OPTIONS = [
   { code: 'SGD', label: 'SGD - Singapore Dollar' },
 ];
 
-const COMMON_TAX_ID_TYPES = ['GSTIN', 'VAT', 'EIN', 'TIN'];
+const COMMON_TAX_ID_TYPES = ['GST Number', 'PAN Number', 'Business Registration Number'];
 const OTHER_TAX_ID_OPTION = '__OTHER__';
 
 const TAX_ID_TYPE_OPTIONS = [...COMMON_TAX_ID_TYPES];
@@ -637,11 +637,11 @@ export default function NewQuotation() {
                   {!isInlineLabels && <Label>Primary Tax ID</Label>}
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Select value={issuerTaxIdType || '__EMPTY__'} onValueChange={(value) => setIssuerTaxIdType(value === '__EMPTY__' ? '' : value)}>
-                      <SelectTrigger className="w-full sm:w-[200px]">
-                        <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Choose Tax ID Type'} />
+                      <SelectTrigger className="w-full sm:w-[220px] whitespace-nowrap">
+                        <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__EMPTY__">Choose Tax ID Type</SelectItem>
+                      <SelectContent className="min-w-[220px]">
+                        <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
                         {TAX_ID_TYPE_OPTIONS.map((item) => (
                           <SelectItem key={item} value={item}>
                             {item}
@@ -652,7 +652,7 @@ export default function NewQuotation() {
                     </Select>
                     {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
                       <Input
-                        placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
+                        placeholder={isInlineLabels ? 'Tax ID Number' : 'e.g., 29ABCDE1234F1Z5'}
                         value={issuerTaxIdValue}
                         onChange={(e) => setIssuerTaxIdValue(e.target.value)}
                       />
@@ -660,7 +660,7 @@ export default function NewQuotation() {
                   </div>
                   {issuerTaxIdType === OTHER_TAX_ID_OPTION && (
                     <Input
-                      placeholder="Specify Tax ID Type"
+                      placeholder="Specify Tax ID Type (e.g., UDYAM, CIN)"
                       value={issuerTaxIdCustomType}
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
@@ -805,11 +805,11 @@ export default function NewQuotation() {
                             value={taxIdName || '__EMPTY__'}
                             onValueChange={(value) => setTaxIdName(value === '__EMPTY__' ? '' : value)}
                           >
-                            <SelectTrigger id="taxIdName" className="w-full sm:w-[160px]">
-                              <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Choose Tax ID Type'} />
+                            <SelectTrigger id="taxIdName" className="w-full sm:w-[220px] whitespace-nowrap">
+                              <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__EMPTY__">Choose Tax ID Type</SelectItem>
+                            <SelectContent className="min-w-[220px]">
+                              <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
                               {TAX_ID_TYPE_OPTIONS.map((item) => (
                                 <SelectItem key={item} value={item}>
                                   {item}
@@ -821,7 +821,7 @@ export default function NewQuotation() {
                           {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
                             <Input
                               id="taxIdValue"
-                              placeholder={isInlineLabels ? 'Tax ID Number' : 'Enter Tax ID Number'}
+                              placeholder={isInlineLabels ? 'Tax ID Number' : 'e.g., 29ABCDE1234F1Z5'}
                               value={taxIdValue}
                               onChange={(e) => setTaxIdValue(e.target.value)}
                             />
@@ -829,7 +829,7 @@ export default function NewQuotation() {
                         </div>
                         {taxIdName === OTHER_TAX_ID_OPTION && (
                           <Input
-                            placeholder="Specify Tax ID Type"
+                            placeholder="Specify Tax ID Type (e.g., UDYAM, CIN)"
                             value={clientTaxIdCustomType}
                             onChange={(e) => setClientTaxIdCustomType(e.target.value)}
                           />

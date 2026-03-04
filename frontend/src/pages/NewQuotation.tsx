@@ -39,7 +39,7 @@ const CURRENCY_OPTIONS = [
   { code: 'SGD', label: 'SGD - Singapore Dollar' },
 ];
 
-const COMMON_TAX_ID_TYPES = ['GST Number', 'PAN Number', 'Business Registration Number'];
+const COMMON_TAX_ID_TYPES = ['GSTIN', 'VAT', 'EIN', 'TIN'];
 const OTHER_TAX_ID_OPTION = '__OTHER__';
 
 const TAX_ID_TYPE_OPTIONS = [...COMMON_TAX_ID_TYPES];
@@ -658,7 +658,7 @@ export default function NewQuotation() {
                   </div>
                   {issuerTaxIdType === OTHER_TAX_ID_OPTION && (
                     <Input
-                      placeholder="Specify Tax ID Type (e.g., UDYAM, CIN)"
+                      placeholder="Specify Tax ID Type"
                       value={issuerTaxIdCustomType}
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
@@ -823,7 +823,7 @@ export default function NewQuotation() {
                         </div>
                         {taxIdName === OTHER_TAX_ID_OPTION && (
                           <Input
-                            placeholder="Specify Tax ID Type (e.g., UDYAM, CIN)"
+                            placeholder="Specify Tax ID Type"
                             value={clientTaxIdCustomType}
                             onChange={(e) => setClientTaxIdCustomType(e.target.value)}
                           />

@@ -53,28 +53,28 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
   return (
     <div className={cn('bg-card rounded-xl shadow-card border border-border/50 overflow-hidden', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[900px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-left py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Quote #
               </th>
-              <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-left py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Client
               </th>
-              <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-left py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Date
               </th>
-              <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-left py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Valid Until
               </th>
-              <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-left py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Amount
               </th>
-              <th className="text-left py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-left py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Status
               </th>
-              <th className="text-right py-4 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th className="sticky top-0 z-10 bg-muted/70 backdrop-blur text-right py-3 px-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -83,7 +83,7 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
             {quotations.map((quotation, index) => (
               <tr
                 key={quotation._id}
-                className="hover:bg-muted/20 transition-colors cursor-pointer animate-fade-in"
+                className="hover:bg-muted/30 transition-colors cursor-pointer animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => navigate(`/quotations/${quotation._id}`)}
               >

@@ -68,7 +68,7 @@ export default function QuotationList() {
                 Manage all your quotations in one place.
               </p>
             </div>
-            <Button variant="accent" onClick={() => navigate('/quotations/new')}>
+            <Button variant="accent" onClick={() => navigate('/quotations/new')} className="w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               New Quotation
             </Button>
@@ -78,8 +78,22 @@ export default function QuotationList() {
 
       {/* Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+        {/* Quick Filters */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {(['all', 'draft', 'sent', 'accepted', 'rejected', 'expired'] as const).map((status) => (
+            <Button
+              key={status}
+              size="sm"
+              variant={statusFilter === status ? 'secondary' : 'outline'}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+            </Button>
+          ))}
+        </div>
+
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input

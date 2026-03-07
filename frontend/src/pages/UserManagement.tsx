@@ -31,6 +31,10 @@ export default function UserManagement() {
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('Employee');
     const [isInviting, setIsInviting] = useState(false);
+    const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
+    const [lastInviteEmailSent, setLastInviteEmailSent] = useState<boolean | null>(null);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending'>('all');
+    const [roleFilter, setRoleFilter] = useState<'all' | 'Employee' | 'SuperAdmin'>('all');
 
     // Fetch Users
     const { data: users = [], isLoading } = useQuery<User[]>({
@@ -45,8 +49,12 @@ export default function UserManagement() {
         e.preventDefault();
         setIsInviting(true);
         try {
-            await api.post('/users/invite', { name, email, role });
-            toast.success(`Invitation sent to ${email}`);
+            const { data } = await api.post('/users/invite', { name, email, role });
+            setLastInviteUrl(data?.inviteUrl || null);
+            setLastInviteEmailSent(
+                typeof data?.emailSent === 'boolean' ? data.emailSent : null
+            );
+            toast.success(data?.message || `Invitation created for ${email}`);
             setName('');
             setEmail('');
             queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -69,6 +77,15 @@ export default function UserManagement() {
         }
     };
 
+    const filteredUsers = users.filter((user) => {
+        const matchesStatus =
+            statusFilter === 'all' ||
+            (statusFilter === 'active' && user.isVerified) ||
+            (statusFilter === 'pending' && !user.isVerified);
+        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+        return matchesStatus && matchesRole;
+    });
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             <div>
@@ -87,7 +104,7 @@ export default function UserManagement() {
                             Invite New User
                         </CardTitle>
                         <CardDescription>
-                            Send an email invitation to add a new member to your team.
+                            Create an invite link and optionally email it.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -135,6 +152,28 @@ export default function UserManagement() {
                                 {!isInviting && <Mail className="ml-2 w-4 h-4" />}
                             </Button>
                         </form>
+                        {lastInviteUrl && (
+                            <div className="mt-4 rounded-md border bg-muted/30 p-3 space-y-2">
+                                <p className="text-xs text-muted-foreground">
+                                    {lastInviteEmailSent
+                                        ? 'Email sent. You can also copy the invite link:'
+                                        : 'Email not sent. Copy the invite link:'}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Input value={lastInviteUrl} readOnly />
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={async () => {
+                                            await navigator.clipboard.writeText(lastInviteUrl);
+                                            toast.success('Invite link copied');
+                                        }}
+                                    >
+                                        Copy
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -145,14 +184,60 @@ export default function UserManagement() {
                         <CardDescription>
                             List of all registered users and their current status.
                         </CardDescription>
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <span className="text-xs font-semibold text-muted-foreground">Status</span>
+                            <Button
+                                size="sm"
+                                variant={statusFilter === 'all' ? 'secondary' : 'outline'}
+                                onClick={() => setStatusFilter('all')}
+                            >
+                                All
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={statusFilter === 'active' ? 'secondary' : 'outline'}
+                                onClick={() => setStatusFilter('active')}
+                            >
+                                Active
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={statusFilter === 'pending' ? 'secondary' : 'outline'}
+                                onClick={() => setStatusFilter('pending')}
+                            >
+                                Pending
+                            </Button>
+                            <span className="ml-2 text-xs font-semibold text-muted-foreground">Role</span>
+                            <Button
+                                size="sm"
+                                variant={roleFilter === 'all' ? 'secondary' : 'outline'}
+                                onClick={() => setRoleFilter('all')}
+                            >
+                                All
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={roleFilter === 'Employee' ? 'secondary' : 'outline'}
+                                onClick={() => setRoleFilter('Employee')}
+                            >
+                                Employee
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={roleFilter === 'SuperAdmin' ? 'secondary' : 'outline'}
+                                onClick={() => setRoleFilter('SuperAdmin')}
+                            >
+                                Admin
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
                             <div className="py-8 text-center text-muted-foreground">Loading users...</div>
                         ) : (
                             <div className="border rounded-md overflow-hidden">
-                                <Table>
-                                    <TableHeader>
+                                <Table className="min-w-[700px]">
+                                    <TableHeader className="bg-muted/40 sticky top-0 z-10">
                                         <TableRow>
                                             <TableHead>User</TableHead>
                                             <TableHead>Role</TableHead>
@@ -162,8 +247,8 @@ export default function UserManagement() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {users.map((user) => (
-                                            <TableRow key={user._id}>
+                                        {filteredUsers.map((user) => (
+                                            <TableRow key={user._id} className="hover:bg-muted/30 transition-colors">
                                                 <TableCell>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium">{user.name}</span>
@@ -210,10 +295,10 @@ export default function UserManagement() {
                                                 </TableCell>
                                             </TableRow>
                                         ))}
-                                        {users.length === 0 && (
+                                        {filteredUsers.length === 0 && (
                                             <TableRow>
                                                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                                    No users found.
+                                                    No users found for the selected filters.
                                                 </TableCell>
                                             </TableRow>
                                         )}

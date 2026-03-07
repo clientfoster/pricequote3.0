@@ -21,7 +21,6 @@ const quotationSchema = mongoose.Schema({
     quoteNumber: {
         type: String,
         required: true,
-        unique: true,
     },
     issuerCompanyName: { type: String },
     issuerTaxIdType: { type: String },
@@ -61,6 +60,8 @@ const quotationSchema = mongoose.Schema({
 }, {
     timestamps: true,
 });
+
+quotationSchema.index({ tenantId: 1, quoteNumber: 1 }, { unique: true });
 
 const Quotation = mongoose.model('Quotation', quotationSchema);
 

@@ -26,6 +26,11 @@ interface NavItem {
 function useNavData() {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const displayTenantName =
+    user?.tenantName && !['n/a', 'na', 'none'].includes(user.tenantName.trim().toLowerCase())
+      ? user.tenantName
+      : 'Quotemaster';
+  const tenantInitial = displayTenantName.charAt(0).toUpperCase();
   const isActive = (path: string) => {
     // For employee dashboard strict match
     if (path.includes('/dashboard') && location.pathname === path) return true;
@@ -52,12 +57,12 @@ function useNavData() {
     bottomItems.push({ title: 'My Profile', href: `/employee/${user?._id}/profile`, icon: UserCircle });
   }
 
-  return { mainItems, bottomItems, isActive, logout, user };
+  return { mainItems, bottomItems, isActive, logout, user, displayTenantName, tenantInitial };
 }
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const { mainItems, bottomItems, isActive, logout, user } = useNavData();
+  const { mainItems, bottomItems, isActive, logout, user, displayTenantName, tenantInitial } = useNavData();
 
   return (
     <aside
@@ -72,21 +77,21 @@ export function AppSidebar() {
           <div className="flex items-center gap-3 animate-fade-in">
             <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
               <span className="text-sidebar-primary-foreground font-bold text-sm">
-                {(user?.tenantName || 'Q').charAt(0).toUpperCase()}
+                {tenantInitial}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="font-display font-semibold text-sidebar-accent-foreground text-sm">
-                {user?.tenantName || 'Your Company'}
+                {displayTenantName}
               </span>
-              <span className="text-xs text-sidebar-muted">Quote Pro</span>
+              <span className="text-xs text-sidebar-muted">Quotemaster</span>
             </div>
           </div>
         )}
         {collapsed && (
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto">
             <span className="text-sidebar-primary-foreground font-bold text-sm">
-              {(user?.tenantName || 'Q').charAt(0).toUpperCase()}
+              {tenantInitial}
             </span>
           </div>
         )}
@@ -167,7 +172,7 @@ export function AppSidebar() {
 }
 
 export function AppMobileNav() {
-  const { mainItems, bottomItems, isActive, logout, user } = useNavData();
+  const { mainItems, bottomItems, isActive, logout, user, displayTenantName, tenantInitial } = useNavData();
 
   return (
     <div className="md:hidden sticky top-0 z-30 bg-background border-b border-border">
@@ -180,9 +185,9 @@ export function AppMobileNav() {
           </div>
             <div className="flex flex-col leading-none">
               <span className="font-display font-semibold text-foreground text-sm">
-                {user?.tenantName || 'Your Company'}
+                {displayTenantName}
               </span>
-              <span className="text-[10px] text-muted-foreground">Quote Pro</span>
+              <span className="text-[10px] text-muted-foreground">Quotemaster</span>
             </div>
         </div>
 
@@ -198,14 +203,14 @@ export function AppMobileNav() {
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
                     <span className="text-sidebar-primary-foreground font-bold text-sm">
-                      {(user?.tenantName || 'Q').charAt(0).toUpperCase()}
+                    {tenantInitial}
                     </span>
                   </div>
                   <div className="flex flex-col">
                     <span className="font-display font-semibold text-sidebar-accent-foreground text-sm">
-                      {user?.tenantName || 'Your Company'}
+                      {displayTenantName}
                     </span>
-                    <span className="text-xs text-sidebar-muted">Quote Pro</span>
+                    <span className="text-xs text-sidebar-muted">Quotemaster</span>
                   </div>
                 </div>
               </div>

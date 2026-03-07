@@ -34,32 +34,44 @@ const inviteUser = asyncHandler(async (req, res) => {
     });
 
     if (user) {
-        // Send email
         const inviteUrl = `${process.env.FRONTEND_URL}/setup-password/${invitationToken}`;
-        const message = `
-            <h1>You have been invited to join QuoteMaster Pro</h1>
-            <p>Please click the link below to set up your password and access the account:</p>
-            <a href="${inviteUrl}">${inviteUrl}</a>
-            <p>This link expires in 24 hours.</p>
-        `;
 
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'QuoteMaster Pro Invitation',
-                message,
-            });
+        const emailConfigured =
+            process.env.EMAIL_SERVICE &&
+            process.env.EMAIL_USER &&
+            process.env.EMAIL_PASS;
 
-            res.status(201).json({
-                message: `Invitation sent to ${user.email}`,
-            });
-        } catch (error) {
-            user.invitationToken = undefined;
-            user.invitationExpires = undefined;
-            await user.save();
-            res.status(500);
-            throw new Error('Email could not be sent');
+        let emailSent = false;
+
+        if (emailConfigured) {
+            // Send email
+            const message = `
+                <h1>You have been invited to join QuoteMaster Pro</h1>
+                <p>Please click the link below to set up your password and access the account:</p>
+                <a href="${inviteUrl}">${inviteUrl}</a>
+                <p>This link expires in 24 hours.</p>
+            `;
+
+            try {
+                await sendEmail({
+                    email: user.email,
+                    subject: 'QuoteMaster Pro Invitation',
+                    message,
+                });
+                emailSent = true;
+            } catch (error) {
+                // Keep invite active and allow manual copy of URL
+                emailSent = false;
+            }
         }
+
+        return res.status(201).json({
+            message: emailSent
+                ? `Invitation sent to ${user.email}`
+                : `Invitation created for ${user.email}. Copy the link below.`,
+            inviteUrl,
+            emailSent,
+        });
     } else {
         res.status(400);
         throw new Error('Invalid user data');

@@ -34,6 +34,8 @@ export default function Clients() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [countryFilter, setCountryFilter] = useState('all');
 
   // Form state
   const [name, setName] = useState('');
@@ -138,6 +140,16 @@ export default function Clients() {
     }
   };
 
+  const filteredClients = clients.filter((client) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      client.name.toLowerCase().includes(query) ||
+      client.companyName.toLowerCase().includes(query) ||
+      (client.email || '').toLowerCase().includes(query);
+    const matchesCountry = countryFilter === 'all' || (client.country || '') === countryFilter;
+    return matchesSearch && matchesCountry;
+  });
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -156,7 +168,7 @@ export default function Clients() {
                 if (!open) resetForm();
               }}>
                 <DialogTrigger asChild>
-                  <Button variant="accent" onClick={() => handleOpenDialog()}>
+                  <Button variant="accent" onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Client
                   </Button>
@@ -242,27 +254,52 @@ export default function Clients() {
 
       {/* Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-md">
+            <Input
+              placeholder="Search by name, company, or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select
+            value={countryFilter}
+            onValueChange={(value) => setCountryFilter(value)}
+          >
+            <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectValue placeholder="Filter by country" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Countries</SelectItem>
+              {COUNTRY_OPTIONS.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
+              <table className="w-full min-w-[900px] text-sm">
+                <thead className="bg-muted/50 sticky top-0 z-10 backdrop-blur">
                   <tr>
-                    <th className="text-left py-3 px-4 font-medium">Name</th>
-                    <th className="text-left py-3 px-4 font-medium">Company</th>
-                    <th className="text-left py-3 px-4 font-medium">Email</th>
-                    <th className="text-left py-3 px-4 font-medium">Contact</th>
-                    <th className="text-left py-3 px-4 font-medium">Address</th>
-                    <th className="text-left py-3 px-4 font-medium">Country</th>
-                    <th className="text-left py-3 px-4 font-medium">Primary Tax ID</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Company</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Email</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Contact</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Address</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Country</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Primary Tax ID</th>
                     {user?.role === 'SuperAdmin' && (
-                      <th className="text-right py-3 px-4 font-medium">Actions</th>
+                      <th className="text-right py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                     )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {clients.map((client) => (
-                    <tr key={client._id} className="hover:bg-muted/30">
+                  {filteredClients.map((client) => (
+                    <tr key={client._id} className="hover:bg-muted/30 transition-colors">
                       <td className="py-3 px-4 font-medium text-foreground">{client.name}</td>
                       <td className="py-3 px-4 text-muted-foreground">{client.companyName}</td>
                       <td className="py-3 px-4 text-muted-foreground">{client.email || '-'}</td>
@@ -304,12 +341,12 @@ export default function Clients() {
           </CardContent>
         </Card>
 
-        {!isLoading && clients.length === 0 && (
+        {!isLoading && filteredClients.length === 0 && (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground">No clients yet</h3>
+            <h3 className="text-lg font-semibold text-foreground">No clients found</h3>
             <p className="text-muted-foreground mt-1">
-              Add a client or create a quotation to get started.
+              Try adjusting your filters or add a new client.
             </p>
           </div>
         )}

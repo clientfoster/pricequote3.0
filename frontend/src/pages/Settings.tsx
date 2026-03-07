@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Building2, CreditCard, Bell, Shield, User as UserIcon } from 'lucide-react';
+import { Building2, Bell, User as UserIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ export default function Settings() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [gstin, setGstin] = useState('');
+  const [savedProfile, setSavedProfile] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -27,6 +28,7 @@ export default function Settings() {
       setName(parsedUser.name);
       setEmail(parsedUser.email);
       setCompanyName(parsedUser.tenantName || '');
+      setSavedProfile({ name: parsedUser.name, email: parsedUser.email });
     }
   }, []);
 
@@ -45,6 +47,7 @@ export default function Settings() {
       });
       localStorage.setItem('userInfo', JSON.stringify(data));
       setUser(data);
+      setSavedProfile({ name: data.name, email: data.email });
       toast.success('Profile updated successfully');
       setPassword('');
       setConfirmPassword('');
@@ -55,17 +58,30 @@ export default function Settings() {
     }
   };
 
+  const hasProfileChanges =
+    savedProfile &&
+    (name !== savedProfile.name ||
+      email !== savedProfile.email ||
+      password.length > 0 ||
+      confirmPassword.length > 0);
+
   return (
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-display font-bold text-foreground">Settings</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage your account and application preferences.
-            </p>
+            <Badge
+              variant="secondary"
+              className={hasProfileChanges ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}
+            >
+              {hasProfileChanges ? 'Unsaved changes' : 'All changes saved'}
+            </Badge>
           </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your account and application preferences.
+          </p>
         </div>
       </header>
 
@@ -100,7 +116,7 @@ export default function Settings() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                These fields are editable on this page but not saved yet.
+                Organization branding updates are available in the next release.
               </p>
             </CardContent>
           </Card>
@@ -146,10 +162,11 @@ export default function Settings() {
                   <Input value={user?.role || ''} disabled className="bg-muted" />
                 </div>
               </div>
-              <div className="pt-2">
+              <div className="pt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Button variant="accent" onClick={handleUpdateProfile} disabled={isUpdating}>
                   {isUpdating ? 'Updating...' : 'Update Profile'}
                 </Button>
+                <span className="text-xs text-muted-foreground">Password changes take effect immediately.</span>
               </div>
             </CardContent>
           </Card>

@@ -50,6 +50,17 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
     }
   };
 
+  const updateStatus = async (id: string, status: 'accepted' | 'rejected') => {
+    try {
+      await api.put(`/quotations/${id}`, { status });
+      toast.success(`Marked as ${status}`);
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
   return (
     <div className={cn('bg-card rounded-xl shadow-card border border-border/50 overflow-hidden', className)}>
       <div className="overflow-x-auto">
@@ -136,6 +147,16 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
                         <Download className="mr-2 h-4 w-4" />
                         Download PDF
                       </DropdownMenuItem>
+                      {quotation.status !== 'accepted' && (
+                        <DropdownMenuItem onClick={() => updateStatus(quotation._id, 'accepted')}>
+                          Mark Accepted
+                        </DropdownMenuItem>
+                      )}
+                      {quotation.status !== 'rejected' && (
+                        <DropdownMenuItem onClick={() => updateStatus(quotation._id, 'rejected')}>
+                          Mark Rejected
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"

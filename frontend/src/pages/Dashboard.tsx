@@ -117,6 +117,20 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Status Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {(['all', 'draft', 'sent', 'accepted', 'rejected', 'expired'] as const).map((status) => (
+            <Button
+              key={status}
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(status === 'all' ? '/quotations' : `/quotations?status=${status}`)}
+            >
+              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+            </Button>
+          ))}
+        </div>
+
         {/* Recent Quotations */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">

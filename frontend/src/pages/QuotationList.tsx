@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import {
 
 export default function QuotationList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuotationStatus | 'all'>('all');
 
@@ -26,6 +27,22 @@ export default function QuotationList() {
   useEffect(() => {
     fetchQuotations();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const status = params.get('status');
+    if (
+      status === 'draft' ||
+      status === 'sent' ||
+      status === 'accepted' ||
+      status === 'rejected' ||
+      status === 'expired'
+    ) {
+      setStatusFilter(status);
+    } else {
+      setStatusFilter('all');
+    }
+  }, [location.search]);
 
   const fetchQuotations = async () => {
     try {
@@ -78,20 +95,6 @@ export default function QuotationList() {
 
       {/* Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-        {/* Quick Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {(['all', 'draft', 'sent', 'accepted', 'rejected', 'expired'] as const).map((status) => (
-            <Button
-              key={status}
-              size="sm"
-              variant={statusFilter === status ? 'secondary' : 'outline'}
-              onClick={() => setStatusFilter(status)}
-            >
-              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
-        </div>
-
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 max-w-md">

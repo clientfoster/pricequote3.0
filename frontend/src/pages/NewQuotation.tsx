@@ -272,6 +272,10 @@ export default function NewQuotation() {
     setIsSubmitting(true);
     try {
       const apiPayload = prepareQuotationData('sent');
+      if (apiPayload.lineItems.length === 0) {
+        toast.error('Please add at least one service before sending.');
+        return;
+      }
       const issuerLogoUrl = issuerLogoFile ? await uploadFileToCloudinary(issuerLogoFile) : undefined;
       const clientLogoUrl = clientLogoFile ? await uploadFileToCloudinary(clientLogoFile) : undefined;
 
@@ -302,8 +306,8 @@ export default function NewQuotation() {
         includeClientDetails: apiPayload.includeClientDetails,
         currency: apiPayload.currency,
         exchangeRate: apiPayload.exchangeRate,
-        lineItems: lineItems.map((item) => ({
-          id: item.id,
+        lineItems: apiPayload.lineItems.map((item, index) => ({
+          id: `item-${index}`,
           service: item.service,
           description: item.description,
           price: item.price,
@@ -358,6 +362,18 @@ export default function NewQuotation() {
     const resolvedClientTaxIdType =
       taxIdName === OTHER_TAX_ID_OPTION ? clientTaxIdCustomType.trim() : taxIdName;
 
+    const cleanedLineItems = lineItems
+      .map(({ id, ...rest }) => ({
+        ...rest,
+        service: rest.service.trim(),
+        description: rest.description.trim(),
+      }))
+      .filter((item) => {
+        const hasText = item.service.length > 0 || item.description.length > 0;
+        const hasValue = item.isFree || item.price > 0;
+        return hasText || hasValue;
+      });
+
     return {
       quoteNumber,
       issuerCompanyName: issuerCompanyName.trim() || undefined,
@@ -374,7 +390,7 @@ export default function NewQuotation() {
       taxIdValue,
       quoteDate,
       validUntil,
-      lineItems: lineItems.map(({ id, ...rest }) => rest), // Remove temp ID
+      lineItems: cleanedLineItems,
       subtotal,
       gst: taxType === 'GST' ? taxAmount : 0,
       gstRate: taxType === 'GST' ? resolvedTaxRate : 0,

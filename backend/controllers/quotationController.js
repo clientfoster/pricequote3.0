@@ -238,10 +238,10 @@ const updateQuotation = asyncHandler(async (req, res) => {
     const quotation = await Quotation.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (quotation) {
-        quotation.clientName = clientName;
-        quotation.companyName = companyName;
-        quotation.contactNumber = contactNumber;
-        quotation.email = email;
+        if (typeof clientName === 'string') quotation.clientName = clientName;
+        if (typeof companyName === 'string') quotation.companyName = companyName;
+        if (typeof contactNumber === 'string') quotation.contactNumber = contactNumber;
+        if (typeof email === 'string') quotation.email = email;
         if (typeof issuerCompanyName === 'string') quotation.issuerCompanyName = issuerCompanyName;
         if (typeof issuerTaxIdType === 'string') quotation.issuerTaxIdType = issuerTaxIdType;
         if (typeof issuerTaxIdValue === 'string') quotation.issuerTaxIdValue = issuerTaxIdValue;
@@ -252,18 +252,18 @@ const updateQuotation = asyncHandler(async (req, res) => {
         if (typeof country === 'string') quotation.country = country;
         if (typeof taxIdName === 'string') quotation.taxIdName = taxIdName;
         if (typeof taxIdValue === 'string') quotation.taxIdValue = taxIdValue;
-        quotation.quoteDate = quoteDate;
-        quotation.validUntil = validUntil;
-        quotation.lineItems = lineItems;
-        quotation.subtotal = subtotal;
-        quotation.gst = gst;
-        quotation.gstRate = gstRate;
+        if (quoteDate) quotation.quoteDate = quoteDate;
+        if (validUntil) quotation.validUntil = validUntil;
+        if (Array.isArray(lineItems) && lineItems.length > 0) quotation.lineItems = lineItems;
+        if (typeof subtotal === 'number') quotation.subtotal = subtotal;
+        if (typeof gst === 'number') quotation.gst = gst;
+        if (typeof gstRate === 'number') quotation.gstRate = gstRate;
         if (typeof req.body.tax === 'number') quotation.tax = req.body.tax;
         if (typeof req.body.taxRate === 'number') quotation.taxRate = req.body.taxRate;
-        quotation.totalPayable = totalPayable;
+        if (typeof totalPayable === 'number') quotation.totalPayable = totalPayable;
         if (req.body.currency) quotation.currency = req.body.currency;
         if (typeof req.body.exchangeRate === 'number') quotation.exchangeRate = req.body.exchangeRate;
-        quotation.status = status;
+        if (typeof status === 'string') quotation.status = status;
         if (typeof req.body.includeCompanyName === 'boolean') quotation.includeCompanyName = req.body.includeCompanyName;
         if (typeof req.body.includeGstin === 'boolean') quotation.includeGstin = req.body.includeGstin;
         if (typeof req.body.includeCin === 'boolean') quotation.includeCin = req.body.includeCin;

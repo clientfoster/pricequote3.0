@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload, MoreVertical, LogIn, Calendar } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,11 +84,10 @@ export default function NewQuotation() {
   const [clientLogoFile, setClientLogoFile] = useState<File | null>(null);
   const [clientLogoPreview, setClientLogoPreview] = useState<string>('');
   const [quoteDate, setQuoteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [validUntil, setValidUntil] = useState(format(addDays(new Date(), 15), 'yyyy-MM-dd'));
-  const [includeGst, setIncludeGst] = useState(true);
-  const [gstRate, setGstRate] = useState(18);
-  const [includeTax, setIncludeTax] = useState(false);
-  const [taxRate, setTaxRate] = useState(10);
+  const [validUntil, setValidUntil] = useState('');
+  const [includeTax, setIncludeTax] = useState(true);
+  const [taxType, setTaxType] = useState<'GST' | 'TAX'>('GST');
+  const [taxRate, setTaxRate] = useState<number | ''>('');
   const [showTaxSection, setShowTaxSection] = useState(true);
   const [showServicesSection] = useState(true);
   const [includeCompanyName, setIncludeCompanyName] = useState(true);
@@ -99,18 +98,22 @@ export default function NewQuotation() {
   const [isRateLoading, setIsRateLoading] = useState(false);
   const issuerLogoInputRef = useRef<HTMLInputElement | null>(null);
   const clientLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const quoteDateInputRef = useRef<HTMLInputElement | null>(null);
+  const validUntilInputRef = useRef<HTMLInputElement | null>(null);
   const isInlineLabels = uxMode === 'inline';
   const fieldSpaceClass = isInlineLabels ? 'space-y-1' : 'space-y-2';
   const gridGapClass = isInlineLabels ? 'gap-3' : 'gap-4';
 
-  // Line items with default items
-  const [lineItems, setLineItems] = useState<FormLineItem[]>(
-    DEFAULT_LINE_ITEMS.map((item, index) => ({
-      ...item,
-      description: ensureBullets(item.description),
-      id: `item-${index}`,
-    }))
-  );
+  // Line items start empty (single blank row)
+  const [lineItems, setLineItems] = useState<FormLineItem[]>([
+    {
+      id: `item-${Date.now()}`,
+      service: '',
+      description: '',
+      price: 0,
+      isFree: false,
+    },
+  ]);
 
   const addLineItem = () => {
     setLineItems([
@@ -187,9 +190,9 @@ export default function NewQuotation() {
 
   // Calculations
   const subtotal = lineItems.reduce((sum, item) => sum + (item.isFree ? 0 : item.price), 0);
-  const gstAmount = includeGst ? (subtotal * gstRate) / 100 : 0;
-  const taxAmount = includeTax ? (subtotal * taxRate) / 100 : 0;
-  const totalPayable = subtotal + gstAmount + taxAmount;
+  const resolvedTaxRate = typeof taxRate === 'number' ? taxRate : 0;
+  const taxAmount = includeTax ? (subtotal * resolvedTaxRate) / 100 : 0;
+  const totalPayable = subtotal + taxAmount;
 
   const formatCurrency = (amountInInr: number) => {
     if (currency !== 'INR' && exchangeRate === null) return '...';
@@ -227,6 +230,10 @@ export default function NewQuotation() {
     if (!validateCustomTaxIds()) {
       return;
     }
+    if (!validUntil) {
+      toast.error('Please select a valid until date.');
+      return;
+    }
     if (currency !== 'INR' && exchangeRate === null) {
       toast.error('Exchange rate not loaded. Please try again.');
       return;
@@ -252,6 +259,10 @@ export default function NewQuotation() {
 
   const handleSend = async () => {
     if (!validateCustomTaxIds()) {
+      return;
+    }
+    if (!validUntil) {
+      toast.error('Please select a valid until date.');
       return;
     }
     if (currency !== 'INR' && exchangeRate === null) {
@@ -365,10 +376,10 @@ export default function NewQuotation() {
       validUntil,
       lineItems: lineItems.map(({ id, ...rest }) => rest), // Remove temp ID
       subtotal,
-      gst: gstAmount,
-      gstRate,
-      tax: taxAmount,
-      taxRate,
+      gst: taxType === 'GST' ? taxAmount : 0,
+      gstRate: taxType === 'GST' ? resolvedTaxRate : 0,
+      tax: taxType === 'TAX' ? taxAmount : 0,
+      taxRate: taxType === 'TAX' ? resolvedTaxRate : 0,
       totalPayable,
       currency,
       exchangeRate: exchangeRate || 1,
@@ -381,6 +392,10 @@ export default function NewQuotation() {
 
   const handleDownloadPDF = () => {
     if (!validateCustomTaxIds()) {
+      return;
+    }
+    if (!validUntil) {
+      toast.error('Please select a valid until date.');
       return;
     }
     if (currency !== 'INR' && exchangeRate === null) {
@@ -417,10 +432,10 @@ export default function NewQuotation() {
         isFree: item.isFree,
       })),
       subtotal,
-      gst: gstAmount,
-      gstRate,
-      tax: taxAmount,
-      taxRate,
+      gst: taxType === 'GST' ? taxAmount : 0,
+      gstRate: taxType === 'GST' ? resolvedTaxRate : 0,
+      tax: taxType === 'TAX' ? taxAmount : 0,
+      taxRate: taxType === 'TAX' ? resolvedTaxRate : 0,
       totalPayable,
       currency,
       exchangeRate: exchangeRate || 1,
@@ -676,8 +691,12 @@ export default function NewQuotation() {
                       className="pr-10"
                       value={quoteDate}
                       onChange={(e) => setQuoteDate(e.target.value)}
+                      ref={quoteDateInputRef}
                     />
-                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                    <Calendar
+                      className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground cursor-pointer"
+                      onClick={() => quoteDateInputRef.current?.showPicker?.() ?? quoteDateInputRef.current?.focus()}
+                    />
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
@@ -688,9 +707,15 @@ export default function NewQuotation() {
                       type="date"
                       className="pr-10"
                       value={validUntil}
+                      min={quoteDate}
+                      required
                       onChange={(e) => setValidUntil(e.target.value)}
+                      ref={validUntilInputRef}
                     />
-                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                    <Calendar
+                      className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground cursor-pointer"
+                      onClick={() => validUntilInputRef.current?.showPicker?.() ?? validUntilInputRef.current?.focus()}
+                    />
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
@@ -893,7 +918,7 @@ export default function NewQuotation() {
                       </Label>
                     </CardTitle>
                   </div>
-                  <CardDescription>Enable tax for countries that don't use GST.</CardDescription>
+                <CardDescription>Select GST or Tax and set the percentage.</CardDescription>
                 </CardHeader>
                 {showTaxSection && (
                 <CardContent className="flex flex-wrap items-center gap-3">
@@ -901,11 +926,7 @@ export default function NewQuotation() {
                     <Checkbox
                       id="includeTax"
                       checked={includeTax}
-                      onCheckedChange={(checked) => {
-                        const next = checked === true;
-                        setIncludeTax(next);
-                        if (next) setIncludeGst(false);
-                      }}
+                      onCheckedChange={(checked) => setIncludeTax(checked === true)}
                     />
                     <Label htmlFor="includeTax" className="text-sm cursor-pointer">
                       Enable Tax
@@ -913,17 +934,40 @@ export default function NewQuotation() {
                   </div>
                   <div className="flex items-center gap-2">
                     {!isInlineLabels && (
+                      <Label htmlFor="taxType" className="text-sm text-muted-foreground">
+                        Type
+                      </Label>
+                    )}
+                    <Select
+                      value={taxType}
+                      onValueChange={(value) => setTaxType(value as 'GST' | 'TAX')}
+                      disabled={!includeTax}
+                    >
+                      <SelectTrigger id="taxType" className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="GST">GST</SelectItem>
+                        <SelectItem value="TAX">Tax</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isInlineLabels && (
                       <Label htmlFor="taxRate" className="text-sm text-muted-foreground">
-                        Tax
+                        Rate
                       </Label>
                     )}
                     <Input
                       id="taxRate"
                       type="number"
                       className="w-20"
-                      placeholder={isInlineLabels ? 'Tax %' : undefined}
+                      placeholder={isInlineLabels ? 'Rate %' : undefined}
                       value={taxRate}
-                      onChange={(e) => setTaxRate(parseInt(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setTaxRate(value === '' ? '' : parseInt(value, 10) || 0);
+                      }}
                       disabled={!includeTax}
                     />
                     <span className="text-sm text-muted-foreground">%</span>
@@ -1139,20 +1183,14 @@ export default function NewQuotation() {
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
 
-                  {/* GST */}
+                  {/* Tax */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="includeGst"
-                        checked={includeGst}
-                        onCheckedChange={(checked) => setIncludeGst(checked === true)}
-                        disabled={includeTax}
-                      />
-                      <Label htmlFor="includeGst" className="text-sm cursor-pointer">
-                        Include GST ({gstRate}%)
-                      </Label>
+                      <span className="text-sm text-muted-foreground">
+                        {taxType} ({resolvedTaxRate}%)
+                      </span>
                     </div>
-                    <span className="text-sm">{formatCurrency(gstAmount)}</span>
+                    <span className="text-sm">{formatCurrency(taxAmount)}</span>
                   </div>
 
                   <Separator />

@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download, Send } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -13,6 +14,8 @@ import type { Quotation } from '@/types/quotation';
 export default function QuotationDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
     const { data: quotation, isLoading, error } = useQuery<Quotation>({
         queryKey: ['quotations', id],
@@ -37,6 +40,24 @@ export default function QuotationDetails() {
     };
 
     const showClientDetails = quotation.includeClientDetails !== false;
+    const hasGst = (quotation.gstRate || 0) > 0 || (quotation.gst || 0) > 0;
+    const hasTax = (quotation.taxRate || 0) > 0 || (quotation.tax || 0) > 0;
+
+    const updateStatus = async (status: 'accepted' | 'rejected') => {
+        if (!id) return;
+        setIsUpdatingStatus(true);
+        try {
+            await api.put(`/quotations/${id}`, { status });
+            toast.success(`Marked as ${status}`);
+            queryClient.invalidateQueries({ queryKey: ['quotations', id] });
+            queryClient.invalidateQueries({ queryKey: ['quotations'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to update status');
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    };
 
     return (
         <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -66,6 +87,21 @@ export default function QuotationDetails() {
                     </Button>
                     <Button variant="default" onClick={() => navigate(`/quotations/${id}/edit`)}>
                         Edit
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        disabled={isUpdatingStatus || quotation.status === 'accepted'}
+                        onClick={() => updateStatus('accepted')}
+                    >
+                        Mark Accepted
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="text-destructive hover:text-destructive"
+                        disabled={isUpdatingStatus || quotation.status === 'rejected'}
+                        onClick={() => updateStatus('rejected')}
+                    >
+                        Mark Rejected
                     </Button>
                     {/* We could add a 'Resend Email' feature later */}
                 </div>
@@ -141,14 +177,16 @@ export default function QuotationDetails() {
                             <span className="text-muted-foreground">Subtotal</span>
                             <span>{formatCurrency(quotation.subtotal, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">GST ({quotation.gstRate}%)</span>
-                            <span>{formatCurrency(quotation.gst, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
-                        </div>
-                        {typeof quotation.tax === 'number' && quotation.tax > 0 && (
+                        {hasGst && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">GST ({quotation.gstRate || 0}%)</span>
+                                <span>{formatCurrency(quotation.gst || 0, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
+                            </div>
+                        )}
+                        {hasTax && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Tax ({quotation.taxRate || 0}%)</span>
-                                <span>{formatCurrency(quotation.tax, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
+                                <span>{formatCurrency(quotation.tax || 0, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
                             </div>
                         )}
                         <div className="pt-4 border-t flex justify-between items-center">

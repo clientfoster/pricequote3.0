@@ -39,14 +39,21 @@ export const getQuotationPDFBlob = (quotation: Quotation): Blob => {
 const generateDoc = (doc: jsPDF, quotation: Quotation) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  let yPos = 0;
+  const margin = 18;
+  let yPos = 20;
   const includeCompanyName = quotation.includeCompanyName !== false;
   const includeGstin = quotation.includeGstin !== false;
   const includeClientDetails = quotation.includeClientDetails !== false;
 
-  // --- Helper Functions ---
-  const addText = (text: string, x: number, y: number, size: number = 10, style: 'normal' | 'bold' = 'normal', color: [number, number, number] = COLORS.text, align: 'left' | 'center' | 'right' = 'left') => {
+  const addText = (
+    text: string,
+    x: number,
+    y: number,
+    size: number = 10,
+    style: 'normal' | 'bold' = 'normal',
+    color: [number, number, number] = COLORS.text,
+    align: 'left' | 'center' | 'right' = 'left'
+  ) => {
     doc.setFont('helvetica', style);
     doc.setFontSize(size);
     doc.setTextColor(...color);
@@ -63,120 +70,67 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     }
   };
 
-  // --- Header ---
-  // Background
-  doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, pageWidth, 40, 'F');
-  yPos = 40;
-
-  // Logo
-  const hasIssuerLogo = addImageIfAvailable(quotation.issuerLogoDataUrl || quotation.issuerLogoUrl, margin, 10, 20, 20);
-  if (!hasIssuerLogo) {
+  // Header
+  const logoSize = 22;
+  const hasLogo = addImageIfAvailable(quotation.issuerLogoDataUrl || quotation.issuerLogoUrl, margin, yPos, logoSize, logoSize);
+  if (!hasLogo) {
     doc.setFillColor(...COLORS.accent);
-    doc.roundedRect(margin, 10, 20, 20, 3, 3, 'F');
-    addText('S', margin + 6.5, 23, 14, 'bold', COLORS.white);
+    doc.roundedRect(margin, yPos, logoSize, logoSize, 3, 3, 'F');
+    addText('Q', margin + 7, yPos + 15, 14, 'bold', COLORS.white);
   }
 
-  // Company Name
-  if (includeCompanyName && quotation.issuerCompanyName) {
-    const issuerName = quotation.issuerCompanyName;
-    addText(issuerName.replace(' Private Limited', ''), margin + 26, 18, 16, 'bold', COLORS.white);
-    addText('Private Limited', margin + 26, 25, 10, 'normal', COLORS.white);
+  const companyX = margin + logoSize + 8;
+  const issuerName = quotation.issuerCompanyName || COMPANY_INFO.name;
+  if (includeCompanyName && issuerName) {
+    addText(issuerName, companyX, yPos + 8, 13, 'bold', COLORS.primary);
   }
-
-  // Header Details (Right side)
-  addText('QUOTATION', pageWidth - margin, 18, 14, 'bold', COLORS.white, 'right');
-  addText(quotation.quoteNumber, pageWidth - margin, 26, 11, 'normal', COLORS.accent, 'right');
-
-  // --- Info Section ---
-  yPos += 15;
-
-  // Company Address/Info
-  const hasCompanyInfo = (includeCompanyName && Boolean(quotation.issuerCompanyName)) || (includeGstin && Boolean(quotation.issuerTaxIdValue));
-  if (hasCompanyInfo) {
-    addText('FROM:', margin, yPos, 8, 'bold', COLORS.text);
-    yPos += 5;
-  }
-  if (includeCompanyName && quotation.issuerCompanyName) {
-    addText(quotation.issuerCompanyName, margin, yPos, 9, 'bold');
-    yPos += 5;
-  }
+  const addressLines = COMPANY_INFO.addressLines || [];
+  addressLines.forEach((line, idx) => {
+    addText(line, companyX, yPos + 14 + idx * 4, 8, 'normal', COLORS.text);
+  });
   if (includeGstin && quotation.issuerTaxIdValue) {
-    const issuerTaxType = quotation.issuerTaxIdType || 'Tax ID';
-    const issuerTaxValue = quotation.issuerTaxIdValue;
-    addText(`${issuerTaxType}: ${issuerTaxValue}`, margin, yPos, 8);
-    yPos += 4;
+    addText(`${quotation.issuerTaxIdType || 'Tax ID'}: ${quotation.issuerTaxIdValue}`, companyX, yPos + 26, 8, 'normal', COLORS.text);
   }
-  yPos += hasCompanyInfo ? 8 : 2; // Spacer
 
-  // Client Details (Bill To)
-  const clientY = 55; // Align with "FROM" section roughly or slightly below header
-  // Note: We'll place "Bill To" on the right side logic or keep left but lower?
-  // Let's use two columns: Left for From, Right for Dates. Then simpler Bill To below.
+  addText('QUOTATION', pageWidth - margin, yPos + 8, 12, 'bold', COLORS.primary, 'right');
+  addText(`Quotation #: ${quotation.quoteNumber}`, pageWidth - margin, yPos + 14, 9, 'normal', COLORS.text, 'right');
+  addText(`Quote Date: ${format(new Date(quotation.quoteDate), 'dd MMM yyyy')}`, pageWidth - margin, yPos + 20, 8, 'normal', COLORS.text, 'right');
+  addText(`Valid Until: ${format(new Date(quotation.validUntil), 'dd MMM yyyy')}`, pageWidth - margin, yPos + 26, 8, 'normal', COLORS.text, 'right');
 
-  // Dates (Right synchronized with From)
-  const dateX = pageWidth - margin - 40;
-  addText('Quote Date:', dateX, 60, 9, 'bold', COLORS.text);
-  addText(format(quotation.quoteDate, 'dd MMM yyyy'), pageWidth - margin, 60, 9, 'normal', COLORS.text, 'right');
+  yPos += 34;
+  doc.setDrawColor(...COLORS.lightGray);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 8;
 
-  addText('Valid Until:', dateX, 66, 9, 'bold', COLORS.text);
-  addText(format(quotation.validUntil, 'dd MMM yyyy'), pageWidth - margin, 66, 9, 'normal', COLORS.text, 'right');
-
-  // --- Bill To Box ---
-  yPos = includeClientDetails ? 80 : 70;
+  // Bill To
   if (includeClientDetails) {
-    const hasCountry = Boolean(quotation.country);
-    const hasTaxId = Boolean(quotation.taxIdName || quotation.taxIdValue);
-    const hasReference = Boolean(quotation.clientReferenceNo);
-    const hasAddress = Boolean(quotation.clientAddress);
-    const extraLines = (hasCountry ? 1 : 0) + (hasTaxId ? 1 : 0) + (hasReference ? 1 : 0) + (hasAddress ? 1 : 0);
-    const billToHeight = 35 + extraLines * 5;
-
     doc.setFillColor(...COLORS.lightGray);
-    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, billToHeight, 2, 2, 'F');
-
-    const boxPadding = 5;
-    addText('BILL TO:', margin + boxPadding, yPos + 8 + boxPadding, 8, 'bold', COLORS.accent);
-    addText(quotation.clientName, margin + boxPadding, yPos + 18, 11, 'bold', COLORS.primary);
-    addText(quotation.companyName, margin + boxPadding, yPos + 24, 9, 'normal', COLORS.text);
-
-    // Client logo on the top-right of bill-to block (if uploaded)
-    addImageIfAvailable(quotation.clientLogoDataUrl || quotation.clientLogoUrl, pageWidth - margin - 26, yPos + 8, 18, 18);
-
-    let clientLineY = yPos + 30;
-    const contactInfo = [quotation.contactNumber, quotation.email].filter(Boolean).join(' | ');
-    addText(contactInfo, margin + boxPadding, clientLineY, 9, 'normal', COLORS.text);
-    if (hasCountry) {
-      clientLineY += 5;
-      addText(`Country: ${quotation.country}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
-    }
-    if (hasTaxId) {
-      clientLineY += 5;
-      addText(`${quotation.taxIdName || 'Tax ID'}: ${quotation.taxIdValue || '-'}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
-    }
-    if (quotation.clientReferenceNo) {
-      clientLineY += 5;
-      addText(`Reference: ${quotation.clientReferenceNo}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
-    }
-    if (quotation.clientAddress) {
-      clientLineY += 5;
-      addText(`Address: ${quotation.clientAddress}`, margin + boxPadding, clientLineY, 8, 'normal', COLORS.text);
-    }
-
-    yPos += billToHeight + 10;
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 28, 2, 2, 'F');
+    addText('BILL TO', margin + 6, yPos + 8, 8, 'bold', COLORS.accent);
+    addText(quotation.clientName || '-', margin + 6, yPos + 14, 10, 'bold', COLORS.primary);
+    addText(quotation.companyName || '-', margin + 6, yPos + 19, 8, 'normal', COLORS.text);
+    const contactInfo = [quotation.email, quotation.contactNumber].filter(Boolean).join(' | ');
+    addText(contactInfo || '-', margin + 6, yPos + 24, 8, 'normal', COLORS.text);
+    yPos += 34;
   }
 
-  // --- Table ---
-  const tableData = quotation.lineItems.map((item, index) => [
-    (index + 1).toString(),
-    item.service,
-    item.description || '-',
-    item.isFree ? 'FREE' : formatCurrency(item.price, quotation.currency || 'INR', quotation.exchangeRate || 1),
-  ]);
+  // Services Table
+  const tableData = quotation.lineItems.map((item) => {
+    const quantity = 1;
+    const unitPrice = item.isFree ? 0 : item.price;
+    const total = unitPrice * quantity;
+    return [
+      item.service,
+      item.description || '-',
+      quantity.toString(),
+      item.isFree ? 'FREE' : formatCurrency(unitPrice, quotation.currency || 'INR', quotation.exchangeRate || 1),
+      item.isFree ? 'FREE' : formatCurrency(total, quotation.currency || 'INR', quotation.exchangeRate || 1),
+    ];
+  });
 
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Service', 'Description', `Amount (${quotation.currency || 'INR'})`]],
+    head: [['Item', 'Description', 'Quantity', 'Unit Price', 'Total']],
     body: tableData,
     margin: { left: margin, right: margin },
     headStyles: {
@@ -184,7 +138,6 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
       textColor: COLORS.white,
       fontStyle: 'bold',
       fontSize: 9,
-      halign: 'left',
     },
     bodyStyles: {
       textColor: COLORS.text,
@@ -192,10 +145,11 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
       cellPadding: 4,
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 50, fontStyle: 'bold' },
-      2: { cellWidth: 'auto' },
+      0: { cellWidth: 32, fontStyle: 'bold' },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 18, halign: 'center' },
       3: { cellWidth: 30, halign: 'right' },
+      4: { cellWidth: 30, halign: 'right' },
     },
     alternateRowStyles: {
       fillColor: COLORS.lightGray,
@@ -206,78 +160,46 @@ const generateDoc = (doc: jsPDF, quotation: Quotation) => {
     },
   });
 
-  // --- Totals ---
+  // Summary
   yPos = (doc as any).lastAutoTable.finalY + 10;
-  const totalsWidth = 70;
-  const totalsX = pageWidth - margin - totalsWidth;
-
-  const addTotalRow = (label: string, value: string, isBold: boolean = false, isLast: boolean = false) => {
-    addText(label, totalsX, yPos, 9, isBold ? 'bold' : 'normal', COLORS.text);
-    addText(value, pageWidth - margin, yPos, 9, isBold ? 'bold' : 'normal', isBold ? COLORS.primary : COLORS.text, 'right');
+  const summaryX = pageWidth - margin - 70;
+  const addSummaryRow = (label: string, value: string, bold: boolean = false) => {
+    addText(label, summaryX, yPos, 9, bold ? 'bold' : 'normal', COLORS.text);
+    addText(value, pageWidth - margin, yPos, 9, bold ? 'bold' : 'normal', COLORS.text, 'right');
     yPos += 6;
   };
 
-  addTotalRow('Subtotal:', formatCurrency(quotation.subtotal, quotation.currency || 'INR', quotation.exchangeRate || 1));
-  const hasTax = typeof quotation.tax === 'number' && quotation.tax > 0;
-  if (!hasTax) {
-    addTotalRow(`GST (${quotation.gstRate}%):`, formatCurrency(quotation.gst, quotation.currency || 'INR', quotation.exchangeRate || 1));
+  addSummaryRow('Subtotal', formatCurrency(quotation.subtotal, quotation.currency || 'INR', quotation.exchangeRate || 1));
+  if ((quotation.discountAmount || 0) > 0) {
+    addSummaryRow(`Discount (${quotation.discountRate || 0}%)`, `- ${formatCurrency(quotation.discountAmount || 0, quotation.currency || 'INR', quotation.exchangeRate || 1)}`);
   }
-  if (hasTax) {
-    const taxLabel = quotation.taxIdName || 'Tax';
-    addTotalRow(`${taxLabel} (${quotation.taxRate || 0}%):`, formatCurrency(quotation.tax, quotation.currency || 'INR', quotation.exchangeRate || 1));
+  if ((quotation.gst || 0) > 0) {
+    addSummaryRow(`GST (${quotation.gstRate || 0}%)`, formatCurrency(quotation.gst || 0, quotation.currency || 'INR', quotation.exchangeRate || 1));
   }
-
-  // Divider
+  if ((quotation.tax || 0) > 0) {
+    addSummaryRow(`Tax (${quotation.taxRate || 0}%)`, formatCurrency(quotation.tax || 0, quotation.currency || 'INR', quotation.exchangeRate || 1));
+  }
   doc.setDrawColor(...COLORS.accent);
-  doc.line(totalsX, yPos, pageWidth - margin, yPos);
+  doc.line(summaryX, yPos, pageWidth - margin, yPos);
   yPos += 5;
+  addSummaryRow('Total Payable', formatCurrency(quotation.totalPayable, quotation.currency || 'INR', quotation.exchangeRate || 1), true);
 
-  // Grand Total (clean line)
-  addTotalRow('Total Payable:', formatCurrency(quotation.totalPayable, quotation.currency || 'INR', quotation.exchangeRate || 1), true);
-
-  // --- Footer Content (Terms & Bank) ---
-  let footerContentY = yPos + 10;
-  const footerBlockHeight = 42;
-  if (footerContentY + footerBlockHeight > pageHeight - 20) {
+  // Footer
+  let footerY = yPos + 10;
+  if (footerY + 40 > pageHeight - 20) {
     doc.addPage();
-    footerContentY = 20;
+    footerY = 20;
   }
+  addText('Payment Terms', margin, footerY, 9, 'bold', COLORS.primary);
+  addText(COMPANY_INFO.paymentTerms, margin, footerY + 5, 8, 'normal', COLORS.text);
+  addText('Thank you for your business!', margin, footerY + 16, 9, 'normal', COLORS.accent);
 
-  const showFooterDetails = Boolean(
-    quotation.issuerCompanyName ||
-      quotation.issuerTaxIdValue,
-  );
-  if (showFooterDetails) {
-    doc.setDrawColor(...COLORS.lightGray);
-    doc.line(margin, footerContentY, pageWidth - margin, footerContentY);
-    footerContentY += 10;
-
-    // Two columns for footer: Terms (Left), Bank (Right)
-    const colWidth = (pageWidth - 2 * margin) / 2 - 5;
-
-    // Terms
-    let termY = footerContentY;
-    addText('Terms & Conditions', margin, termY, 9, 'bold', COLORS.primary);
-    termY += 5;
-    const terms = [
-      `- Timeline: ${COMPANY_INFO.timeline}`,
-      `- ${COMPANY_INFO.paymentTerms}`,
-      '- Validity: 15 days from issue date',
-      '- Prices subject to change post-validity',
-    ];
-    terms.forEach((term) => {
-      addText(term, margin, termY, 8, 'normal', COLORS.text);
-      termY += 4;
-    });
-
-    // Bank Details
-    let bankY = footerContentY;
-    const bankX = pageWidth - margin - colWidth;
-    // Bank details removed
+  const signatureX = pageWidth - margin - 60;
+  const signatureSrc = quotation.issuerSignatureDataUrl || quotation.issuerSignatureUrl;
+  if (signatureSrc) {
+    addImageIfAvailable(signatureSrc, signatureX, footerY + 2, 60, 14);
   }
-
-  // --- Global Footer (Page Number / Tagline) ---
-  const bottomY = pageHeight - 10;
-  addText('Thank you for your business!', pageWidth / 2, bottomY - 5, 8, 'normal', COLORS.accent, 'center');
-  addText(`Generated on ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, pageWidth / 2, bottomY, 7, 'normal', [150, 160, 170], 'center');
+  addText('Authorized Signature', signatureX + 30, footerY + 20, 8, 'normal', COLORS.text, 'center');
+  doc.setDrawColor(...COLORS.text);
+  doc.line(signatureX, footerY + 18, pageWidth - margin, footerY + 18);
 };

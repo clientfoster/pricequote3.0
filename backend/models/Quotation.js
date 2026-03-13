@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const lineItemSchema = mongoose.Schema({
     service: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String, required: false },
     price: { type: Number, required: true, default: 0 },
     isFree: { type: Boolean, default: false },
 });
@@ -18,6 +18,10 @@ const quotationSchema = mongoose.Schema({
         required: true,
         ref: 'User',
     },
+    clientId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Client',
+    },
     quoteNumber: {
         type: String,
         required: true,
@@ -26,6 +30,7 @@ const quotationSchema = mongoose.Schema({
     issuerTaxIdType: { type: String },
     issuerTaxIdValue: { type: String },
     issuerLogoUrl: { type: String },
+    issuerSignatureUrl: { type: String },
     clientName: { type: String },
     companyName: { type: String },
     contactNumber: { type: String },
@@ -40,6 +45,8 @@ const quotationSchema = mongoose.Schema({
     validUntil: { type: Date, required: true },
     lineItems: [lineItemSchema],
     subtotal: { type: Number, required: true },
+    discountRate: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
     gst: { type: Number, required: true },
     gstRate: { type: Number, required: true },
     tax: { type: Number, default: 0 },
@@ -56,6 +63,7 @@ const quotationSchema = mongoose.Schema({
         enum: ['draft', 'sent', 'accepted', 'rejected', 'expired'],
         default: 'draft',
     },
+    emailSentAt: { type: Date },
     pdfUrl: { type: String },
 }, {
     timestamps: true,

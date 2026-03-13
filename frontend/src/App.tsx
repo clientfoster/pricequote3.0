@@ -20,6 +20,8 @@ import SetupPassword from "./pages/SetupPassword";
 import UserManagement from "./pages/UserManagement";
 import Setup from "./pages/Setup";
 import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +62,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/setup-password/:token" element={<SetupPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/quote" element={<NewQuotation />} />
 
             {/* Protected Routes */}

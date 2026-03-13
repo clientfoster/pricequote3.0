@@ -39,6 +39,12 @@ const userSchema = mongoose.Schema({
     invitationExpires: {
         type: Date,
     },
+    resetPasswordToken: {
+        type: String,
+    },
+    resetPasswordExpires: {
+        type: Date,
+    },
 }, {
     timestamps: true,
 });

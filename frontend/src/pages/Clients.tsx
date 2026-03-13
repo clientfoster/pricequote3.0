@@ -9,30 +9,34 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { COUNTRY_OPTIONS, TAX_ID_NAME_BY_COUNTRY, TAX_ID_NAME_OPTIONS } from '@/data/taxIdCatalog';
-
-interface Client {
-  _id: string;
-  name: string;
-  companyName: string;
-  email: string;
-  contactNumber: string;
-  address?: string;
-  country?: string;
-  taxIdName?: string;
-  taxIdValue?: string;
-  gstin?: string;
-}
+import type { Client } from '@/types/client';
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [viewClient, setViewClient] = useState<Client | null>(null);
+  const [clientStats, setClientStats] = useState<{ totalQuotations: number; totalRevenue: number; lastQuotationDate: string | null } | null>(null);
+  const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [countryFilter, setCountryFilter] = useState('all');
@@ -100,6 +104,7 @@ export default function Clients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsSaving(true);
       const payload = {
         name,
         companyName,
@@ -125,18 +130,42 @@ export default function Clients() {
       fetchClients();
     } catch (error: any) {
       toast.error('Failed to save client');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this client?')) {
-      try {
-        await api.delete(`/clients/${id}`);
-        toast.success('Client deleted');
-        fetchClients();
-      } catch (error) {
-        toast.error('Failed to delete client');
-      }
+    const target = clients.find((client) => client._id === id) || null;
+    setDeleteTarget(target);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setIsDeleting(true);
+      await api.delete(`/clients/${deleteTarget._id}`);
+      toast.success('Client deleted');
+      fetchClients();
+    } catch (error) {
+      toast.error('Failed to delete client');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  const openClientProfile = async (client: Client) => {
+    setViewClient(client);
+    setIsStatsLoading(true);
+    try {
+      const { data } = await api.get(`/clients/${client._id}/stats`);
+      setClientStats(data);
+    } catch {
+      setClientStats(null);
+      toast.error('Failed to load client history');
+    } finally {
+      setIsStatsLoading(false);
     }
   };
 
@@ -243,7 +272,9 @@ export default function Clients() {
                       <Label>{taxIdName || 'Tax ID Number'}</Label>
                       <Input value={taxIdValue} onChange={(e) => setTaxIdValue(e.target.value)} />
                     </div>
-                    <Button type="submit" className="w-full">{editingId ? 'Update Client' : 'Create Client'}</Button>
+                    <Button type="submit" className="w-full" disabled={isSaving}>
+                      {isSaving ? 'Saving...' : (editingId ? 'Update Client' : 'Create Client')}
+                    </Button>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -299,7 +330,11 @@ export default function Clients() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredClients.map((client) => (
-                    <tr key={client._id} className="hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={client._id}
+                      className="hover:bg-muted/30 transition-colors cursor-pointer"
+                      onClick={() => openClientProfile(client)}
+                    >
                       <td className="py-3 px-4 font-medium text-foreground">{client.name}</td>
                       <td className="py-3 px-4 text-muted-foreground">{client.companyName}</td>
                       <td className="py-3 px-4 text-muted-foreground">{client.email || '-'}</td>
@@ -313,7 +348,7 @@ export default function Clients() {
                       </td>
                       {user?.role === 'SuperAdmin' && (
                         <td className="py-3 px-4 text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -350,6 +385,74 @@ export default function Clients() {
             </p>
           </div>
         )}
+
+        <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete client?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently remove the client record.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <Dialog open={Boolean(viewClient)} onOpenChange={(open) => !open && setViewClient(null)}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Client Profile</DialogTitle>
+            </DialogHeader>
+            {viewClient && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Client</p>
+                  <p className="text-lg font-semibold text-foreground">{viewClient.name}</p>
+                  <p className="text-sm text-muted-foreground">{viewClient.companyName}</p>
+                  <p className="text-sm text-muted-foreground">{viewClient.email || '-'}</p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-border/60 p-3">
+                    <p className="text-xs text-muted-foreground">Total Quotations</p>
+                    <p className="text-lg font-semibold">
+                      {isStatsLoading ? '...' : clientStats?.totalQuotations ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/60 p-3">
+                    <p className="text-xs text-muted-foreground">Total Revenue</p>
+                    <p className="text-lg font-semibold">
+                      {isStatsLoading ? '...' : `₹${(clientStats?.totalRevenue ?? 0).toLocaleString('en-IN')}`}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/60 p-3">
+                    <p className="text-xs text-muted-foreground">Last Quote</p>
+                    <p className="text-lg font-semibold">
+                      {isStatsLoading
+                        ? '...'
+                        : clientStats?.lastQuotationDate
+                          ? new Date(clientStats.lastQuotationDate).toLocaleDateString('en-IN')
+                          : '-'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Address: {viewClient.address || '-'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Country: {viewClient.country || '-'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Tax ID: {viewClient.taxIdName ? `${viewClient.taxIdName}: ` : ''}{viewClient.taxIdValue || viewClient.gstin || '-'}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

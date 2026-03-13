@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload, MoreVertical, LogIn, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Download, ArrowUp, ArrowDown, Upload, MoreVertical, LogIn, Calendar, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from '@/types/quotation';
+import type { Client } from '@/types/client';
 import { generateQuotationPDF, getQuotationPDFBlob } from '@/lib/pdfGenerator';
 import { toast } from 'sonner';
 import api from '@/lib/api'; // Added API import
@@ -44,8 +45,12 @@ const OTHER_TAX_ID_OPTION = '__OTHER__';
 
 const TAX_ID_TYPE_OPTIONS = [...COMMON_TAX_ID_TYPES];
 
-const createQuoteNumber = () =>
-  `QT-${format(new Date(), 'yyyy')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+const createQuoteNumber = () => {
+  const year = format(new Date(), 'yyyy');
+  const random = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+  const time = String(Date.now()).slice(-4);
+  return `QT-${year}-${random}${time}`;
+};
 
 const toDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -55,6 +60,18 @@ const toDataUrl = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = String(reader.result || '');
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Failed to read PDF'));
+    reader.readAsDataURL(blob);
+  });
+
 export default function NewQuotation() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,6 +79,7 @@ export default function NewQuotation() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uxMode, setUxMode] = useState<'outside' | 'inline'>('outside');
   const isPublicQuote = location.pathname === '/quote';
+  const canSendQuotation = Boolean(user) && !isPublicQuote;
 
   // Form state
   const [quoteNumber, setQuoteNumber] = useState(createQuoteNumber);
@@ -71,6 +89,8 @@ export default function NewQuotation() {
   const [issuerTaxIdValue, setIssuerTaxIdValue] = useState('');
   const [issuerLogoFile, setIssuerLogoFile] = useState<File | null>(null);
   const [issuerLogoPreview, setIssuerLogoPreview] = useState<string>('');
+  const [issuerSignatureFile, setIssuerSignatureFile] = useState<File | null>(null);
+  const [issuerSignaturePreview, setIssuerSignaturePreview] = useState<string>('');
   const [clientName, setClientName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
@@ -83,11 +103,16 @@ export default function NewQuotation() {
   const [taxIdValue, setTaxIdValue] = useState('');
   const [clientLogoFile, setClientLogoFile] = useState<File | null>(null);
   const [clientLogoPreview, setClientLogoPreview] = useState<string>('');
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [isClientsLoading, setIsClientsLoading] = useState(false);
   const [quoteDate, setQuoteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [validUntil, setValidUntil] = useState('');
   const [includeTax, setIncludeTax] = useState(true);
   const [taxType, setTaxType] = useState<'GST' | 'TAX'>('GST');
   const [taxRate, setTaxRate] = useState<number | ''>('');
+  const [includeDiscount, setIncludeDiscount] = useState(false);
+  const [discountRate, setDiscountRate] = useState<number | ''>('');
   const [showTaxSection, setShowTaxSection] = useState(true);
   const [showServicesSection] = useState(true);
   const [includeCompanyName, setIncludeCompanyName] = useState(true);
@@ -97,6 +122,7 @@ export default function NewQuotation() {
   const [exchangeRate, setExchangeRate] = useState<number | null>(1);
   const [isRateLoading, setIsRateLoading] = useState(false);
   const issuerLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const issuerSignatureInputRef = useRef<HTMLInputElement | null>(null);
   const clientLogoInputRef = useRef<HTMLInputElement | null>(null);
   const quoteDateInputRef = useRef<HTMLInputElement | null>(null);
   const validUntilInputRef = useRef<HTMLInputElement | null>(null);
@@ -191,8 +217,12 @@ export default function NewQuotation() {
   // Calculations
   const subtotal = lineItems.reduce((sum, item) => sum + (item.isFree ? 0 : item.price), 0);
   const resolvedTaxRate = typeof taxRate === 'number' ? taxRate : 0;
-  const taxAmount = includeTax ? (subtotal * resolvedTaxRate) / 100 : 0;
-  const totalPayable = subtotal + taxAmount;
+  const resolvedDiscountRate = typeof discountRate === 'number' ? discountRate : 0;
+  const rawDiscount = includeDiscount ? (subtotal * resolvedDiscountRate) / 100 : 0;
+  const discountAmount = Math.min(rawDiscount, subtotal);
+  const taxableSubtotal = subtotal - discountAmount;
+  const taxAmount = includeTax ? (taxableSubtotal * resolvedTaxRate) / 100 : 0;
+  const totalPayable = taxableSubtotal + taxAmount;
 
   const formatCurrency = (amountInInr: number) => {
     if (currency !== 'INR' && exchangeRate === null) return '...';
@@ -215,17 +245,6 @@ export default function NewQuotation() {
     return exchangeRate ? amountInCurrency / exchangeRate : 0;
   };
 
-  const uploadFileToCloudinary = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const { data } = await api.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return data.filePath as string;
-  };
-
   const handleSaveDraft = async () => {
     if (!validateCustomTaxIds()) {
       return;
@@ -240,12 +259,14 @@ export default function NewQuotation() {
     }
     setIsSubmitting(true);
     try {
-      const issuerLogoUrl = issuerLogoFile ? await uploadFileToCloudinary(issuerLogoFile) : undefined;
-      const clientLogoUrl = clientLogoFile ? await uploadFileToCloudinary(clientLogoFile) : undefined;
+      const issuerLogoUrl = issuerLogoPreview || undefined;
+      const issuerSignatureUrl = issuerSignaturePreview || undefined;
+      const clientLogoUrl = clientLogoPreview || undefined;
       const quotationData = prepareQuotationData('draft');
       await api.post('/quotations', {
         ...quotationData,
         issuerLogoUrl,
+        issuerSignatureUrl,
         clientLogoUrl,
       });
       toast.success('Quotation saved as draft');
@@ -259,6 +280,10 @@ export default function NewQuotation() {
 
   const handleSend = async () => {
     if (!validateCustomTaxIds()) {
+      return;
+    }
+    if (!email.trim()) {
+      toast.error('Please enter the client email to send the quotation.');
       return;
     }
     if (!validUntil) {
@@ -276,8 +301,9 @@ export default function NewQuotation() {
         toast.error('Please add at least one service before sending.');
         return;
       }
-      const issuerLogoUrl = issuerLogoFile ? await uploadFileToCloudinary(issuerLogoFile) : undefined;
-      const clientLogoUrl = clientLogoFile ? await uploadFileToCloudinary(clientLogoFile) : undefined;
+      const issuerLogoUrl = issuerLogoPreview || undefined;
+      const issuerSignatureUrl = issuerSignaturePreview || undefined;
+      const clientLogoUrl = clientLogoPreview || undefined;
 
       // Construct Quotation object for PDF Generator (now flat structure)
       const quotationForPDF: Quotation = {
@@ -288,6 +314,8 @@ export default function NewQuotation() {
         issuerTaxIdValue: apiPayload.issuerTaxIdValue,
         issuerLogoUrl,
         issuerLogoDataUrl: issuerLogoPreview || undefined,
+        issuerSignatureUrl,
+        issuerSignatureDataUrl: issuerSignaturePreview || undefined,
         clientName: apiPayload.clientName,
         companyName: apiPayload.companyName,
         contactNumber: apiPayload.contactNumber,
@@ -314,6 +342,8 @@ export default function NewQuotation() {
           isFree: item.isFree
         })),
         subtotal: apiPayload.subtotal,
+        discountRate: apiPayload.discountRate,
+        discountAmount: apiPayload.discountAmount,
         gst: apiPayload.gst,
         gstRate: apiPayload.gstRate,
         tax: apiPayload.tax,
@@ -327,27 +357,28 @@ export default function NewQuotation() {
 
       // 1. Generate PDF Blob
       const blob = getQuotationPDFBlob(quotationForPDF);
-      const file = new File([blob], `${apiPayload.quoteNumber}.pdf`, { type: 'application/pdf' });
+      const pdfBase64 = await blobToBase64(blob);
 
-      // 2. Upload to Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data: uploadData } = await api.post('/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      // 3. Send to API with PDF URL
+      // 2. Save quotation (draft) first
       const finalPayload = {
         ...apiPayload,
         issuerLogoUrl,
+        issuerSignatureUrl,
         clientLogoUrl,
-        pdfUrl: uploadData.filePath
       };
 
-      await api.post('/quotations', finalPayload);
-      toast.success('Quotation and PDF saved to cloud successfully');
+      const { data: createdQuotation } = await api.post('/quotations', finalPayload);
+
+      // 3. Send email with PDF attachment (no cloud storage)
+      await api.post(`/quotations/${createdQuotation._id}/send-email`, {
+        email: apiPayload.email,
+        subject: `Quotation ${apiPayload.quoteNumber} from ${apiPayload.issuerCompanyName || 'Quotemaster'}`,
+        message: `<div style="font-family:Arial, sans-serif; line-height:1.5;">Please find your quotation attached.</div>`,
+        pdfBase64,
+        filename: `${apiPayload.quoteNumber}.pdf`,
+      });
+
+      toast.success('Quotation sent successfully');
       navigate('/quotations');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send quotation');
@@ -376,6 +407,7 @@ export default function NewQuotation() {
 
     return {
       quoteNumber,
+      clientId: selectedClientId || undefined,
       issuerCompanyName: issuerCompanyName.trim() || undefined,
       issuerTaxIdType: resolvedIssuerTaxIdType || undefined,
       issuerTaxIdValue: issuerTaxIdValue.trim() || undefined,
@@ -392,6 +424,8 @@ export default function NewQuotation() {
       validUntil,
       lineItems: cleanedLineItems,
       subtotal,
+      discountRate: includeDiscount ? resolvedDiscountRate : 0,
+      discountAmount,
       gst: taxType === 'GST' ? taxAmount : 0,
       gstRate: taxType === 'GST' ? resolvedTaxRate : 0,
       tax: taxType === 'TAX' ? taxAmount : 0,
@@ -427,6 +461,7 @@ export default function NewQuotation() {
         (issuerTaxIdType === OTHER_TAX_ID_OPTION ? issuerTaxIdCustomType.trim() : issuerTaxIdType) || undefined,
       issuerTaxIdValue: issuerTaxIdValue.trim() || undefined,
       issuerLogoDataUrl: issuerLogoPreview || undefined,
+      issuerSignatureDataUrl: issuerSignaturePreview || undefined,
       clientName,
       companyName,
       quoteDate: new Date(quoteDate),
@@ -448,6 +483,8 @@ export default function NewQuotation() {
         isFree: item.isFree,
       })),
       subtotal,
+      discountRate: includeDiscount ? resolvedDiscountRate : 0,
+      discountAmount,
       gst: taxType === 'GST' ? taxAmount : 0,
       gstRate: taxType === 'GST' ? resolvedTaxRate : 0,
       tax: taxType === 'TAX' ? taxAmount : 0,
@@ -490,6 +527,33 @@ export default function NewQuotation() {
     }
   };
 
+  const handleIssuerSignatureSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIssuerSignatureFile(file);
+    try {
+      setIssuerSignaturePreview(await toDataUrl(file));
+    } catch {
+      toast.error('Failed to load signature preview');
+    }
+  };
+
+  const handleClientSelect = (value: string) => {
+    const selectedId = value === 'none' ? '' : value;
+    setSelectedClientId(selectedId);
+    if (!selectedId) return;
+    const selected = clients.find((client) => client._id === selectedId);
+    if (!selected) return;
+    setClientName(selected.name || '');
+    setCompanyName(selected.companyName || '');
+    setEmail(selected.email || '');
+    setContactNumber(selected.contactNumber || '');
+    setClientAddress(selected.address || '');
+    setCountry(selected.country || '');
+    setTaxIdName(selected.taxIdName || '');
+    setTaxIdValue(selected.taxIdValue || selected.gstin || '');
+  };
+
   const validateCustomTaxIds = () => {
     const issuerOtherSelected = issuerTaxIdType === OTHER_TAX_ID_OPTION;
     const issuerHasAny = issuerTaxIdCustomType.trim() || issuerTaxIdValue.trim();
@@ -507,6 +571,36 @@ export default function NewQuotation() {
 
     return true;
   };
+
+  useEffect(() => {
+    if (!user || isPublicQuote) {
+      setClients([]);
+      return;
+    }
+    let ignore = false;
+    const fetchClients = async () => {
+      setIsClientsLoading(true);
+      try {
+        const { data } = await api.get('/clients');
+        if (!ignore) {
+          setClients(data);
+        }
+      } catch {
+        if (!ignore) {
+          toast.error('Failed to load clients');
+        }
+      } finally {
+        if (!ignore) {
+          setIsClientsLoading(false);
+        }
+      }
+    };
+
+    fetchClients();
+    return () => {
+      ignore = true;
+    };
+  }, [user, isPublicQuote]);
 
   useEffect(() => {
     let ignore = false;
@@ -559,6 +653,12 @@ export default function NewQuotation() {
                   <Download className="w-4 h-4" />
                   Download PDF
                 </Button>
+                {canSendQuotation && (
+                  <Button className="w-full sm:w-auto" variant="default" onClick={handleSend} disabled={isSubmitting}>
+                    <Mail className="w-4 h-4" />
+                    Send Quotation
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="h-9 w-9 sm:hidden" aria-label="More actions">
@@ -566,6 +666,12 @@ export default function NewQuotation() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
+                    {canSendQuotation && (
+                      <DropdownMenuItem onClick={handleSend} disabled={isSubmitting}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Send Quotation
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={handleSaveDraft} disabled={isSubmitting}>
                       <Save className="mr-2 h-4 w-4" />
                       Save Draft
@@ -764,6 +870,27 @@ export default function NewQuotation() {
                     )}
                   </div>
                 </div>
+                <div className={`md:col-span-2 ${fieldSpaceClass}`}>
+                  {!isInlineLabels && <Label>Authorized Signature</Label>}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={issuerSignatureInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={handleIssuerSignatureSelect}
+                    />
+                    <Button variant="outline" type="button" onClick={() => issuerSignatureInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Signature
+                    </Button>
+                    {issuerSignatureFile && (
+                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {issuerSignatureFile.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
             )}
@@ -796,6 +923,29 @@ export default function NewQuotation() {
                 {includeClientDetails && (
                   <CardContent className="space-y-4">
                     <div className={`grid grid-cols-1 md:grid-cols-2 ${gridGapClass}`}>
+                      <div className={fieldSpaceClass}>
+                        {!isInlineLabels && <Label htmlFor="clientSelect">Select Existing Client</Label>}
+                        <Select
+                          value={selectedClientId || 'none'}
+                          onValueChange={handleClientSelect}
+                          disabled={isClientsLoading}
+                        >
+                          <SelectTrigger id="clientSelect">
+                            <SelectValue placeholder={isClientsLoading ? 'Loading clients...' : 'Choose a client'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {clients.map((client) => (
+                              <SelectItem key={client._id} value={client._id}>
+                                {client.name} {client.companyName ? `• ${client.companyName}` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isClientsLoading && (
+                          <p className="text-xs text-muted-foreground">Loading client list...</p>
+                        )}
+                      </div>
                       <div className={fieldSpaceClass}>
                         {!isInlineLabels && <Label htmlFor="clientName">Client Name</Label>}
                         <Input
@@ -1198,6 +1348,41 @@ export default function NewQuotation() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
+
+                  {/* Discount */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="includeDiscount"
+                        checked={includeDiscount}
+                        onCheckedChange={(checked) => setIncludeDiscount(checked === true)}
+                      />
+                      <Label htmlFor="includeDiscount" className="text-sm cursor-pointer">
+                        Discount
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="discountRate"
+                        type="number"
+                        className="w-20"
+                        placeholder="0"
+                        value={discountRate}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setDiscountRate(value === '' ? '' : Math.min(parseInt(value, 10) || 0, 100));
+                        }}
+                        disabled={!includeDiscount}
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                  {includeDiscount && discountAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Discount ({resolvedDiscountRate}%)</span>
+                      <span className="text-destructive">- {formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
 
                   {/* Tax */}
                   <div className="flex items-center justify-between">

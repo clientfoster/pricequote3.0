@@ -1,9 +1,20 @@
 import { useNavigate } from 'react-router-dom';
-import { Eye, MoreHorizontal, Send, Download, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Eye, MoreHorizontal, Download, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +36,9 @@ interface QuotationTableProps {
 export function QuotationTable({ quotations, className }: QuotationTableProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<Quotation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
   const formatCurrency = (amountInInr: number, currency: string = 'INR', rate: number = 1) => {
     const locale = currency === 'INR' ? 'en-IN' : 'en-US';
@@ -37,27 +51,38 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this quotation?')) return;
+    const target = quotations.find((item) => item._id === id) || null;
+    setDeleteTarget(target);
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/quotations/${id}`);
+      setIsDeleting(true);
+      await api.delete(`/quotations/${deleteTarget._id}`);
       toast.success('Quotation deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       // Also potentially invalidate stats
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     } catch (error: any) {
       toast.error('Failed to delete quotation');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
   const updateStatus = async (id: string, status: 'accepted' | 'rejected') => {
     try {
+      setStatusUpdatingId(id);
       await api.put(`/quotations/${id}`, { status });
       toast.success(`Marked as ${status}`);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+      setStatusUpdatingId(null);
     }
   };
 
@@ -135,10 +160,6 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send to Client
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
                         generateQuotationPDF(quotation);
                         toast.success('PDF downloaded successfully');
@@ -148,12 +169,18 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
                         Download PDF
                       </DropdownMenuItem>
                       {quotation.status !== 'accepted' && (
-                        <DropdownMenuItem onClick={() => updateStatus(quotation._id, 'accepted')}>
+                        <DropdownMenuItem
+                          onClick={() => updateStatus(quotation._id, 'accepted')}
+                          disabled={statusUpdatingId === quotation._id}
+                        >
                           Mark Accepted
                         </DropdownMenuItem>
                       )}
                       {quotation.status !== 'rejected' && (
-                        <DropdownMenuItem onClick={() => updateStatus(quotation._id, 'rejected')}>
+                        <DropdownMenuItem
+                          onClick={() => updateStatus(quotation._id, 'rejected')}
+                          disabled={statusUpdatingId === quotation._id}
+                        >
                           Mark Rejected
                         </DropdownMenuItem>
                       )}
@@ -179,6 +206,24 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
           <p className="text-muted-foreground">No quotations found</p>
         </div>
       )}
+
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete quotation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the quotation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

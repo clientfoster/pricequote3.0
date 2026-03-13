@@ -8,6 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Trash2, UserPlus, Mail, Shield, User as UserIcon, Check, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -35,6 +45,8 @@ export default function UserManagement() {
     const [lastInviteEmailSent, setLastInviteEmailSent] = useState<boolean | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending'>('all');
     const [roleFilter, setRoleFilter] = useState<'all' | 'Employee' | 'SuperAdmin'>('all');
+    const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch Users
     const { data: users = [], isLoading } = useQuery<User[]>({
@@ -66,14 +78,22 @@ export default function UserManagement() {
     };
 
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm('Are you sure you want to remove this user? This action cannot be undone.')) return;
+        const target = users.find((item) => item._id === userId) || null;
+        setDeleteTarget(target);
+    };
 
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
         try {
-            await api.delete(`/users/${userId}`);
+            setIsDeleting(true);
+            await api.delete(`/users/${deleteTarget._id}`);
             toast.success('User removed successfully');
             queryClient.invalidateQueries({ queryKey: ['users'] });
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to delete user');
+        } finally {
+            setIsDeleting(false);
+            setDeleteTarget(null);
         }
     };
 
@@ -309,6 +329,23 @@ export default function UserManagement() {
                     </CardContent>
                 </Card>
             </div>
+
+            <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove user?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently remove the user account.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} disabled={isDeleting}>
+                            {isDeleting ? 'Removing...' : 'Remove'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

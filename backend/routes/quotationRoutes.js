@@ -6,12 +6,14 @@ const {
     getQuotationById,
     updateQuotation,
     deleteQuotation,
-    getDashboardStats
+    getDashboardStats,
+    sendQuotationEmail
 } = require('../controllers/quotationController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.route('/').post(protect, createQuotation).get(protect, getQuotations);
 router.route('/stats').get(protect, getDashboardStats);
+router.route('/:id/send-email').post(protect, sendQuotationEmail);
 router
     .route('/:id')
     .get(protect, getQuotationById)

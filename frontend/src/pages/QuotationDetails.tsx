@@ -1,16 +1,20 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
 import type { Quotation } from '@/types/quotation';
+import { SendQuotationEmailDialog } from '@/components/quotations/SendQuotationEmailDialog';
+import api from '@/lib/api';
 
 export default function QuotationDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
     const { data: quotation, isLoading, error } = useQuery<Quotation>({
         queryKey: ['quotations', id],
@@ -37,6 +41,7 @@ export default function QuotationDetails() {
     const showClientDetails = quotation.includeClientDetails !== false;
     const hasGst = (quotation.gstRate || 0) > 0 || (quotation.gst || 0) > 0;
     const hasTax = (quotation.taxRate || 0) > 0 || (quotation.tax || 0) > 0;
+    const hasDiscount = (quotation.discountAmount || 0) > 0;
 
     return (
         <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -64,10 +69,13 @@ export default function QuotationDetails() {
                         <Download className="w-4 h-4 mr-2" />
                         Download PDF
                     </Button>
+                    <Button variant="accent" onClick={() => setEmailDialogOpen(true)}>
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Quotation
+                    </Button>
                     <Button variant="default" onClick={() => navigate(`/quotations/${id}/edit`)}>
                         Edit
                     </Button>
-                    {/* We could add a 'Resend Email' feature later */}
                 </div>
             </div>
 
@@ -104,7 +112,7 @@ export default function QuotationDetails() {
                         </div>
 
                         <div className="border rounded-lg overflow-x-auto">
-                            <table className="w-full text-sm">
+                            <table className="w-full min-w-[520px] text-sm">
                                 <thead className="bg-muted/50">
                                     <tr>
                                 <th className="text-left py-3 px-4 font-medium">Service</th>
@@ -141,6 +149,12 @@ export default function QuotationDetails() {
                             <span className="text-muted-foreground">Subtotal</span>
                             <span>{formatCurrency(quotation.subtotal, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
                         </div>
+                        {hasDiscount && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Discount ({quotation.discountRate || 0}%)</span>
+                                <span className="text-destructive">- {formatCurrency(quotation.discountAmount || 0, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
+                            </div>
+                        )}
                         {hasGst && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">GST ({quotation.gstRate || 0}%)</span>
@@ -160,6 +174,12 @@ export default function QuotationDetails() {
                     </CardContent>
                 </Card>
             </div>
+
+            <SendQuotationEmailDialog
+                quotation={quotation}
+                open={emailDialogOpen}
+                onOpenChange={setEmailDialogOpen}
+            />
         </div>
     );
 }

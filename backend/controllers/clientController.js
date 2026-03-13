@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Client = require('../models/Client');
+const Quotation = require('../models/Quotation');
 
 const clean = (value) => (typeof value === 'string' ? value.trim() : value);
 
@@ -42,7 +43,18 @@ const createClient = asyncHandler(async (req, res) => {
 // @route   GET /api/clients
 // @access  Private
 const getClients = asyncHandler(async (req, res) => {
-    const clients = await Client.find({ tenantId: req.user.tenantId });
+    const { search } = req.query;
+    let query = { tenantId: req.user.tenantId };
+
+    if (typeof search === 'string' && search.trim().length > 0) {
+        const regex = new RegExp(search.trim(), 'i');
+        query = {
+            tenantId: req.user.tenantId,
+            $or: [{ name: regex }, { companyName: regex }, { email: regex }],
+        };
+    }
+
+    const clients = await Client.find(query).sort({ createdAt: -1 });
     res.json(clients);
 });
 
@@ -101,4 +113,38 @@ const deleteClient = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { createClient, getClients, updateClient, deleteClient };
+// @desc    Get client stats and history
+// @route   GET /api/clients/:id/stats
+// @access  Private
+const getClientStats = asyncHandler(async (req, res) => {
+    const client = await Client.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+
+    if (!client) {
+        res.status(404);
+        throw new Error('Client not found');
+    }
+
+    const match = {
+        tenantId: req.user.tenantId,
+        $or: [
+            { clientId: client._id },
+            client.email ? { email: client.email } : null,
+            client.name && client.companyName ? { clientName: client.name, companyName: client.companyName } : null,
+        ].filter(Boolean),
+    };
+
+    const quotations = await Quotation.find(match).sort({ quoteDate: -1 });
+    const totalQuotations = quotations.length;
+    const totalRevenue = quotations
+        .filter((q) => q.status === 'accepted')
+        .reduce((sum, q) => sum + q.totalPayable, 0);
+    const lastQuotationDate = quotations.length > 0 ? quotations[0].quoteDate : null;
+
+    res.json({
+        totalQuotations,
+        totalRevenue,
+        lastQuotationDate,
+    });
+});
+
+module.exports = { createClient, getClients, updateClient, deleteClient, getClientStats };

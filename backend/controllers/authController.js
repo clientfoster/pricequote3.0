@@ -2,6 +2,8 @@ const asyncHandler = require('express-async-handler');
 const generateToken = require('../utils/generateToken');
 const User = require('../models/User');
 const Tenant = require('../models/Tenant');
+const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 const getTenantName = async (tenantId) => {
@@ -108,4 +110,69 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { authUser, acceptInvite, setupSuperAdmin };
+// @desc    Request password reset
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const requestPasswordReset = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+        return res.json({ message: 'If that email exists, a reset link has been sent.' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutes
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+    const message = `
+        <div style="font-family:Arial, sans-serif; line-height:1.5;">
+            <p>Hi ${user.name || 'there'},</p>
+            <p>We received a request to reset your password.</p>
+            <p><a href="${resetUrl}">Click here to reset your password</a></p>
+            <p>This link will expire in 30 minutes.</p>
+            <p>If you didn't request this, you can ignore this email.</p>
+        </div>
+    `;
+
+    await sendEmail({
+        email: user.email,
+        subject: 'Reset your password',
+        message,
+    });
+
+    res.json({ message: 'If that email exists, a reset link has been sent.' });
+});
+
+// @desc    Reset password with token
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+const resetPassword = asyncHandler(async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        res.status(400);
+        throw new Error('Invalid or expired reset token');
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Password reset successful. Please login.' });
+});
+
+module.exports = { authUser, acceptInvite, setupSuperAdmin, requestPasswordReset, resetPassword };

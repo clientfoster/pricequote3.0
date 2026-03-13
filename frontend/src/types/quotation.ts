@@ -15,6 +15,9 @@ export interface Quotation {
   issuerTaxIdValue?: string;
   issuerLogoUrl?: string;
   issuerLogoDataUrl?: string;
+  issuerSignatureUrl?: string;
+  issuerSignatureDataUrl?: string;
+  clientId?: string;
   clientName: string;
   companyName: string;
   contactNumber: string;
@@ -30,6 +33,8 @@ export interface Quotation {
   validUntil: Date;
   lineItems: LineItem[];
   subtotal: number;
+  discountRate?: number;
+  discountAmount?: number;
   gst: number;
   gstRate: number;
   tax?: number;
@@ -56,6 +61,7 @@ export type QuotationStatus = Quotation['status'];
 
 export const COMPANY_INFO = {
   name: 'Semixon Technologies Private Limited',
+  addressLines: ['Address not provided'],
   gstin: '29ABQCS8084G1ZI',
   bankName: 'YES BANK',
   ifsc: 'YESB0000476',

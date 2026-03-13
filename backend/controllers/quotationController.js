@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Quotation = require('../models/Quotation');
+const Client = require('../models/Client');
 const sendEmail = require('../utils/sendEmail');
 const axios = require('axios');
 
@@ -13,6 +14,8 @@ const createQuotation = asyncHandler(async (req, res) => {
         issuerTaxIdType,
         issuerTaxIdValue,
         issuerLogoUrl,
+        issuerSignatureUrl,
+        clientId,
         clientName,
         companyName,
         contactNumber,
@@ -27,6 +30,8 @@ const createQuotation = asyncHandler(async (req, res) => {
         validUntil,
         lineItems,
         subtotal,
+        discountRate,
+        discountAmount,
         gst,
         gstRate,
         tax,
@@ -42,14 +47,54 @@ const createQuotation = asyncHandler(async (req, res) => {
         includeClientDetails
     } = req.body;
 
+    let resolvedClientId = clientId;
+    if (!resolvedClientId) {
+        try {
+            let clientQuery = null;
+            if (email) {
+                clientQuery = { email };
+            } else if (clientName && companyName) {
+                clientQuery = { name: clientName, companyName };
+            }
+
+            if (clientQuery) {
+                const existingClient = await Client.findOne({ ...clientQuery, tenantId: req.user.tenantId });
+                if (existingClient) {
+                    resolvedClientId = existingClient._id;
+                } else if (clientName || companyName || email) {
+                    const createdClient = await Client.create({
+                        tenantId: req.user.tenantId,
+                        user: req.user._id,
+                        name: clientName,
+                        companyName: companyName,
+                        email: email,
+                        contactNumber: contactNumber,
+                        address: clientAddress,
+                        country: country,
+                        taxIdName: taxIdName,
+                        taxIdValue: taxIdValue,
+                        gstin: taxIdValue,
+                    });
+                    resolvedClientId = createdClient._id;
+                    console.log(`Auto-added new client: ${clientName}`);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to resolve or auto-add client:', err);
+            // Do not fail the request
+        }
+    }
+
     const quotation = new Quotation({
         tenantId: req.user.tenantId,
         user: req.user._id,
+        clientId: resolvedClientId,
         quoteNumber,
         issuerCompanyName,
         issuerTaxIdType,
         issuerTaxIdValue,
         issuerLogoUrl,
+        issuerSignatureUrl,
         clientName,
         companyName,
         contactNumber,
@@ -64,6 +109,8 @@ const createQuotation = asyncHandler(async (req, res) => {
         validUntil,
         lineItems,
         subtotal,
+        discountRate,
+        discountAmount,
         gst,
         gstRate,
         tax,
@@ -79,42 +126,15 @@ const createQuotation = asyncHandler(async (req, res) => {
         includeClientDetails
     });
 
-    const createdQuotation = await quotation.save();
-
-    // Auto-Add Client if not exists
+    let createdQuotation;
     try {
-        const Client = require('../models/Client');
-        // Find by email if exists, otherwise by fuzzy name/company match? 
-        // Safer to just use email if present, or strict name + company match.
-        let clientQuery = {};
-        if (email) {
-            clientQuery = { email };
-        } else {
-            clientQuery = { name: clientName, companyName: companyName };
+        createdQuotation = await quotation.save();
+    } catch (error) {
+        if (error && error.code === 11000) {
+            res.status(409);
+            throw new Error('Quotation number already exists. Please generate a new quotation number.');
         }
-
-        const existingClient = await Client.findOne({ ...clientQuery, tenantId: req.user.tenantId });
-
-        if (!existingClient) {
-            await Client.create({
-                tenantId: req.user.tenantId,
-                user: req.user._id, // Assign to current user? Or is Client global? Check Client model.
-                name: clientName,
-                companyName: companyName,
-                email: email,
-                contactNumber: contactNumber,
-                address: clientAddress,
-                country: country,
-                taxIdName: taxIdName,
-                taxIdValue: taxIdValue,
-                gstin: taxIdValue,
-                // address? gstin? Not in quotation body usually.
-            });
-            console.log(`Auto-added new client: ${clientName}`);
-        }
-    } catch (err) {
-        console.error('Failed to auto-add client:', err);
-        // Do not fail the request
+        throw error;
     }
 
     // Auto-Send Email if Status is 'sent' and PDF URL exists
@@ -146,6 +166,7 @@ const createQuotation = asyncHandler(async (req, res) => {
                 email,
                 subject: emailSubject,
                 message: emailMessage,
+                replyTo: req.user?.email,
                 attachments: [
                     {
                         filename: `${quoteNumber || 'Quotation'}.pdf`,
@@ -161,7 +182,8 @@ const createQuotation = asyncHandler(async (req, res) => {
                 await sendEmail({
                     email,
                     subject: emailSubject,
-                    message: emailMessage
+                    message: emailMessage,
+                    replyTo: req.user?.email
                     // No attachments
                 });
                 console.log(`Email (fallback) sent successfully to ${email}`);
@@ -211,6 +233,7 @@ const getQuotationById = asyncHandler(async (req, res) => {
 // @access  Private
 const updateQuotation = asyncHandler(async (req, res) => {
     const {
+        clientId,
         clientName,
         companyName,
         contactNumber,
@@ -219,6 +242,7 @@ const updateQuotation = asyncHandler(async (req, res) => {
         issuerTaxIdType,
         issuerTaxIdValue,
         issuerLogoUrl,
+        issuerSignatureUrl,
         clientReferenceNo,
         clientAddress,
         clientLogoUrl,
@@ -229,6 +253,8 @@ const updateQuotation = asyncHandler(async (req, res) => {
         validUntil,
         lineItems,
         subtotal,
+        discountRate,
+        discountAmount,
         gst,
         gstRate,
         totalPayable,
@@ -238,6 +264,7 @@ const updateQuotation = asyncHandler(async (req, res) => {
     const quotation = await Quotation.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
 
     if (quotation) {
+        if (clientId) quotation.clientId = clientId;
         if (typeof clientName === 'string') quotation.clientName = clientName;
         if (typeof companyName === 'string') quotation.companyName = companyName;
         if (typeof contactNumber === 'string') quotation.contactNumber = contactNumber;
@@ -246,6 +273,7 @@ const updateQuotation = asyncHandler(async (req, res) => {
         if (typeof issuerTaxIdType === 'string') quotation.issuerTaxIdType = issuerTaxIdType;
         if (typeof issuerTaxIdValue === 'string') quotation.issuerTaxIdValue = issuerTaxIdValue;
         if (typeof issuerLogoUrl === 'string') quotation.issuerLogoUrl = issuerLogoUrl;
+        if (typeof issuerSignatureUrl === 'string') quotation.issuerSignatureUrl = issuerSignatureUrl;
         if (typeof clientReferenceNo === 'string') quotation.clientReferenceNo = clientReferenceNo;
         if (typeof clientAddress === 'string') quotation.clientAddress = clientAddress;
         if (typeof clientLogoUrl === 'string') quotation.clientLogoUrl = clientLogoUrl;
@@ -256,6 +284,8 @@ const updateQuotation = asyncHandler(async (req, res) => {
         if (validUntil) quotation.validUntil = validUntil;
         if (Array.isArray(lineItems) && lineItems.length > 0) quotation.lineItems = lineItems;
         if (typeof subtotal === 'number') quotation.subtotal = subtotal;
+        if (typeof discountRate === 'number') quotation.discountRate = discountRate;
+        if (typeof discountAmount === 'number') quotation.discountAmount = discountAmount;
         if (typeof gst === 'number') quotation.gst = gst;
         if (typeof gstRate === 'number') quotation.gstRate = gstRate;
         if (typeof req.body.tax === 'number') quotation.tax = req.body.tax;
@@ -298,6 +328,7 @@ const updateQuotation = asyncHandler(async (req, res) => {
                     email,
                     subject: emailSubject,
                     message: emailMessage,
+                    replyTo: req.user?.email,
                     attachments: [
                         {
                             filename: `${quotation.quoteNumber}.pdf`,
@@ -306,6 +337,11 @@ const updateQuotation = asyncHandler(async (req, res) => {
                     ]
                 });
                 console.log(`Email with attachment sent successfully to ${email}`);
+                quotation.emailSentAt = new Date();
+                if (quotation.status === 'draft') {
+                    quotation.status = 'sent';
+                }
+                await quotation.save();
             } catch (error) {
                 console.error('Failed to send email with attachment:', error);
                 console.log('Retrying email without attachment...');
@@ -313,10 +349,16 @@ const updateQuotation = asyncHandler(async (req, res) => {
                     await sendEmail({
                         email,
                         subject: emailSubject,
-                        message: emailMessage
+                        message: emailMessage,
+                        replyTo: req.user?.email
                         // No attachments
                     });
                     console.log(`Email (fallback) sent successfully to ${email}`);
+                    quotation.emailSentAt = new Date();
+                    if (quotation.status === 'draft') {
+                        quotation.status = 'sent';
+                    }
+                    await quotation.save();
                 } catch (retryError) {
                     console.error('Failed to send fallback email:', retryError);
                 }
@@ -377,4 +419,50 @@ const deleteQuotation = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { createQuotation, getQuotations, getQuotationById, updateQuotation, deleteQuotation, getDashboardStats };
+// @desc    Send quotation email with PDF attachment
+// @route   POST /api/quotations/:id/send-email
+// @access  Private
+const sendQuotationEmail = asyncHandler(async (req, res) => {
+    const { email, subject, message, pdfBase64, filename } = req.body;
+
+    if (!email || !subject || !message || !pdfBase64) {
+        res.status(400);
+        throw new Error('Email, subject, message, and PDF attachment are required');
+    }
+
+    const quotation = await Quotation.findOne({ _id: req.params.id, tenantId: req.user.tenantId }).populate('user', 'name email');
+
+    if (!quotation) {
+        res.status(404);
+        throw new Error('Quotation not found');
+    }
+
+    if (req.user.role !== 'SuperAdmin' &&
+        (!quotation.user || (typeof quotation.user === 'object' ? quotation.user._id.toString() !== req.user._id.toString() : quotation.user.toString() !== req.user._id.toString()))) {
+        res.status(401);
+        throw new Error('Not authorized to send this quotation');
+    }
+
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+    await sendEmail({
+        email,
+        subject,
+        message,
+        replyTo: req.user?.email,
+        attachments: [
+            {
+                filename: filename || `${quotation.quoteNumber}.pdf`,
+                content: pdfBuffer,
+            },
+        ],
+    });
+
+    quotation.status = 'sent';
+    quotation.emailSentAt = new Date();
+    await quotation.save();
+
+    res.json({ message: 'Email sent successfully' });
+});
+
+module.exports = { createQuotation, getQuotations, getQuotationById, updateQuotation, deleteQuotation, getDashboardStats, sendQuotationEmail };

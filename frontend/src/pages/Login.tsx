@@ -58,6 +58,11 @@ export default function Login() {
                             Login
                         </Button>
                         <div className="mt-4 text-center">
+                            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:underline">
+                                Forgot password?
+                            </Link>
+                        </div>
+                        <div className="mt-2 text-center">
                             <Link to="/setup" className="text-sm text-muted-foreground hover:underline">
                                 First time setup? Create Super Admin
                             </Link>

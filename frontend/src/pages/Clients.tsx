@@ -183,7 +183,7 @@ export default function Clients() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-display font-bold text-foreground">Clients</h1>
@@ -312,7 +312,51 @@ export default function Clients() {
         </div>
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            <div className="sm:hidden divide-y divide-border">
+              {filteredClients.map((client) => (
+                <div key={client._id} className="p-4 space-y-3" onClick={() => openClientProfile(client)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Client</p>
+                      <p className="font-semibold text-foreground">{client.name}</p>
+                      <p className="text-sm text-muted-foreground">{client.companyName}</p>
+                    </div>
+                    {user?.role === 'SuperAdmin' && (
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => handleOpenDialog(client)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDelete(client._id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>{client.email || '-'}</p>
+                    <p>{client.contactNumber || '-'}</p>
+                    <p>{client.country || '-'}</p>
+                  </div>
+                </div>
+              ))}
+              {!isLoading && filteredClients.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No clients found</p>
+                </div>
+              )}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full min-w-[900px] text-sm">
                 <thead className="bg-muted/50 sticky top-0 z-10 backdrop-blur">
                   <tr>
@@ -377,7 +421,7 @@ export default function Clients() {
         </Card>
 
         {!isLoading && filteredClients.length === 0 && (
-          <div className="text-center py-12">
+          <div className="hidden sm:block text-center py-12">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground">No clients found</h3>
             <p className="text-muted-foreground mt-1">

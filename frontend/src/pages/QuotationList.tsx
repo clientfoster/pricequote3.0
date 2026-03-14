@@ -77,7 +77,7 @@ export default function QuotationList() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-14 md:top-0 z-10">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-display font-bold text-foreground">Quotations</h1>
@@ -94,7 +94,7 @@ export default function QuotationList() {
       </header>
 
       {/* Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 max-w-md">

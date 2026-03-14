@@ -647,67 +647,37 @@ export default function NewQuotation() {
                 </p>
               </div>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-              <div className="flex w-full items-center gap-2 sm:w-auto">
-                <Button className="w-full sm:w-auto" variant="accent" onClick={handleDownloadPDF}>
-                  <Download className="w-4 h-4" />
-                  Download PDF
+            <div className="hidden sm:flex sm:items-center sm:gap-2">
+              <Button variant="accent" onClick={handleDownloadPDF}>
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
+              {canSendQuotation && (
+                <Button variant="default" onClick={handleSend} disabled={isSubmitting}>
+                  <Mail className="w-4 h-4" />
+                  Send Quotation
                 </Button>
-                {canSendQuotation && (
-                  <Button className="w-full sm:w-auto" variant="default" onClick={handleSend} disabled={isSubmitting}>
-                    <Mail className="w-4 h-4" />
-                    Send Quotation
-                  </Button>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9 sm:hidden" aria-label="More actions">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    {canSendQuotation && (
-                      <DropdownMenuItem onClick={handleSend} disabled={isSubmitting}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Send Quotation
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleSaveDraft} disabled={isSubmitting}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Draft
-                    </DropdownMenuItem>
-                    {isPublicQuote && (
-                      <DropdownMenuItem onClick={() => navigate('/login', { state: { from: '/dashboard' } })}>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Login
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <div className="hidden sm:flex sm:items-center sm:gap-2">
-                <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-                  <Save className="w-4 h-4" />
-                  Save Draft
-                </Button>
-                {isPublicQuote && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
-                    className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                  >
-                    Login
-                  </button>
-                )}
-              </div>
+              )}
+              <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                <Save className="w-4 h-4" />
+                Save Draft
+              </Button>
+              {isPublicQuote && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                  className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                >
+                  Login
+                </button>
+              )}
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 pb-28 sm:pb-6">
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="flex w-full flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
@@ -1413,6 +1383,26 @@ export default function NewQuotation() {
               </Card>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Action Bar */}
+      <div className="sm:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur">
+        <div className="px-4 py-3 flex items-center gap-2">
+          <Button className="flex-1" variant="accent" onClick={handleDownloadPDF}>
+            <Download className="w-4 h-4 mr-2" />
+            PDF
+          </Button>
+          {canSendQuotation && (
+            <Button className="flex-1" variant="default" onClick={handleSend} disabled={isSubmitting}>
+              <Mail className="w-4 h-4 mr-2" />
+              Send
+            </Button>
+          )}
+          <Button className="flex-1" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+            <Save className="w-4 h-4 mr-2" />
+            Draft
+          </Button>
         </div>
       </div>
     </div>

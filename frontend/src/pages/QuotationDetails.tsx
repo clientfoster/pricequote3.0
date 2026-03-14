@@ -44,7 +44,7 @@ export default function QuotationDetails() {
     const hasDiscount = (quotation.discountAmount || 0) > 0;
 
     return (
-        <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -64,16 +64,16 @@ export default function QuotationDetails() {
                         </p>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" onClick={() => generateQuotationPDF(quotation)}>
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <Button className="w-full sm:w-auto" variant="outline" onClick={() => generateQuotationPDF(quotation)}>
                         <Download className="w-4 h-4 mr-2" />
                         Download PDF
                     </Button>
-                    <Button variant="accent" onClick={() => setEmailDialogOpen(true)}>
+                    <Button className="w-full sm:w-auto" variant="accent" onClick={() => setEmailDialogOpen(true)}>
                         <Mail className="w-4 h-4 mr-2" />
                         Send Quotation
                     </Button>
-                    <Button variant="default" onClick={() => navigate(`/quotations/${id}/edit`)}>
+                    <Button className="w-full sm:w-auto" variant="default" onClick={() => navigate(`/quotations/${id}/edit`)}>
                         Edit
                     </Button>
                 </div>

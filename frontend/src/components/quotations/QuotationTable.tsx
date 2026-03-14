@@ -88,7 +88,64 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
 
   return (
     <div className={cn('bg-card rounded-xl shadow-card border border-border/50 overflow-hidden', className)}>
-      <div className="overflow-x-auto">
+      <div className="sm:hidden divide-y divide-border">
+        {quotations.map((quotation) => (
+          <div
+            key={quotation._id}
+            className="p-4 space-y-3"
+            onClick={() => navigate(`/quotations/${quotation._id}`)}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Quote #</p>
+                <p className="font-mono text-sm font-semibold text-foreground">{quotation.quoteNumber}</p>
+              </div>
+              <StatusBadge status={quotation.status} />
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium text-foreground">{quotation.clientName}</p>
+              <p className="text-sm text-muted-foreground">{quotation.companyName}</p>
+            </div>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{format(new Date(quotation.quoteDate), 'dd MMM yyyy')}</span>
+              <span>{formatCurrency(quotation.totalPayable, quotation.currency || 'INR', quotation.exchangeRate || 1)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  generateQuotationPDF(quotation);
+                  toast.success('PDF downloaded successfully');
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                PDF
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(quotation._id);
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        ))}
+        {quotations.length === 0 && (
+          <div className="py-10 text-center">
+            <p className="text-muted-foreground">No quotations found</p>
+          </div>
+        )}
+      </div>
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full min-w-[900px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
@@ -202,7 +259,7 @@ export function QuotationTable({ quotations, className }: QuotationTableProps) {
       </div>
 
       {quotations.length === 0 && (
-        <div className="py-12 text-center">
+        <div className="hidden sm:block py-12 text-center">
           <p className="text-muted-foreground">No quotations found</p>
         </div>
       )}

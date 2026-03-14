@@ -118,7 +118,7 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
     const { email } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail }).lean();
     if (!user) {
         return res.json({ message: 'If that email exists, a reset link has been sent.' });
     }
@@ -130,7 +130,8 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
     // Use updateOne to avoid validation failures for legacy users missing tenantId
     await User.updateOne(
         { _id: user._id },
-        { $set: { resetPasswordToken: hashedResetToken, resetPasswordExpires } }
+        { $set: { resetPasswordToken: hashedResetToken, resetPasswordExpires } },
+        { runValidators: false }
     );
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';

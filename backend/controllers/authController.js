@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 const getTenantName = async (tenantId) => {
@@ -123,9 +124,14 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutes
-    await user.save();
+    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutes
+
+    // Use updateOne to avoid validation failures for legacy users missing tenantId
+    await User.updateOne(
+        { _id: user._id },
+        { $set: { resetPasswordToken: hashedResetToken, resetPasswordExpires } }
+    );
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
@@ -167,10 +173,16 @@ const resetPassword = asyncHandler(async (req, res) => {
         throw new Error('Invalid or expired reset token');
     }
 
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update directly to avoid validation failures
+    await User.updateOne(
+        { _id: user._id },
+        {
+            $set: { password: hashedPassword, isVerified: true },
+            $unset: { resetPasswordToken: '', resetPasswordExpires: '' },
+        }
+    );
 
     res.json({ message: 'Password reset successful. Please login.' });
 });

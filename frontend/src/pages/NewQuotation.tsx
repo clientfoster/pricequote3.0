@@ -1403,6 +1403,15 @@ export default function NewQuotation() {
             <Save className="w-4 h-4 mr-2" />
             Draft
           </Button>
+          {isPublicQuote && (
+            <Button
+              className="flex-1"
+              variant="ghost"
+              onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+            >
+              Login
+            </Button>
+          )}
         </div>
       </div>
     </div>

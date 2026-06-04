@@ -111,6 +111,54 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Register a new workspace and owner account
+// @route   POST /api/auth/register
+// @access  Public
+const registerUser = asyncHandler(async (req, res) => {
+    const { name, email, password, companyName } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!name || !normalizedEmail || !password) {
+        res.status(400);
+        throw new Error('Name, email, and password are required');
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+        res.status(400);
+        throw new Error('An account with this email already exists');
+    }
+
+    const tenant = await Tenant.create({
+        name: companyName || `${name}'s Company`,
+    });
+
+    const user = await User.create({
+        tenantId: tenant._id,
+        name,
+        email: normalizedEmail,
+        password,
+        role: 'SuperAdmin',
+        isVerified: true,
+    });
+
+    if (!user) {
+        res.status(400);
+        throw new Error('Invalid user data');
+    }
+
+    res.status(201).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        tenantId: user.tenantId,
+        tenantName: tenant.name,
+        token: generateToken(user._id),
+    });
+});
+
 // @desc    Request password reset
 // @route   POST /api/auth/forgot-password
 // @access  Public
@@ -188,4 +236,4 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.json({ message: 'Password reset successful. Please login.' });
 });
 
-module.exports = { authUser, acceptInvite, setupSuperAdmin, requestPasswordReset, resetPassword };
+module.exports = { authUser, acceptInvite, setupSuperAdmin, registerUser, requestPasswordReset, resetPassword };

@@ -16,6 +16,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     login: (email: string, password: string) => Promise<void>;
+    signup: (name: string, email: string, password: string, companyName?: string) => Promise<void>;
     logout: () => void;
     updateProfile: (data: FormData) => Promise<void>;
     isLoading: boolean;
@@ -54,6 +55,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 message = 'Login API not found. Check VITE_API_URL (should point to your backend /api).';
             }
 
+            toast.error(message);
+            throw error;
+        }
+    };
+
+    const signup = async (name: string, email: string, password: string, companyName?: string) => {
+        try {
+            const normalizedEmail = email.trim().toLowerCase();
+            const { data } = await api.post('/auth/register', {
+                name: name.trim(),
+                email: normalizedEmail,
+                password,
+                companyName: companyName?.trim(),
+            });
+            setUser(data);
+            localStorage.setItem('userInfo', JSON.stringify(data));
+            toast.success('Account created successfully');
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Signup failed';
             toast.error(message);
             throw error;
         }
@@ -101,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, updateProfile, isLoading }}>
+        <AuthContext.Provider value={{ user, login, signup, logout, updateProfile, isLoading }}>
             {children}
         </AuthContext.Provider>
     );

@@ -44,6 +44,8 @@ const COMMON_TAX_ID_TYPES = ['GSTIN', 'VAT', 'EIN', 'TIN'];
 const OTHER_TAX_ID_OPTION = '__OTHER__';
 
 const TAX_ID_TYPE_OPTIONS = [...COMMON_TAX_ID_TYPES];
+const PUBLIC_QUOTE_LIMIT = 5;
+const PUBLIC_QUOTE_USAGE_KEY = 'publicQuoteUsageCount';
 
 const createQuoteNumber = () => {
   const year = format(new Date(), 'yyyy');
@@ -77,9 +79,14 @@ export default function NewQuotation() {
   const location = useLocation();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [publicQuoteUsage, setPublicQuoteUsage] = useState(0);
+  const [showLimitBanner, setShowLimitBanner] = useState(false);
   const [uxMode, setUxMode] = useState<'outside' | 'inline'>('outside');
   const isPublicQuote = location.pathname === '/quote';
   const canSendQuotation = Boolean(user) && !isPublicQuote;
+  const canUsePublicQuote = !user && isPublicQuote;
+  const isPublicLimitReached = canUsePublicQuote && publicQuoteUsage >= PUBLIC_QUOTE_LIMIT;
+  const publicQuotesRemaining = Math.max(PUBLIC_QUOTE_LIMIT - publicQuoteUsage, 0);
 
   // Form state
   const [quoteNumber, setQuoteNumber] = useState(createQuoteNumber);
@@ -245,7 +252,33 @@ export default function NewQuotation() {
     return exchangeRate ? amountInCurrency / exchangeRate : 0;
   };
 
+  const requireAccountForSaving = () => {
+    if (!user) {
+      toast.error('Create an account to save and manage quotes.');
+      navigate('/signup', { state: { from: '/quotations/new' } });
+      return false;
+    }
+    return true;
+  };
+
+  const consumePublicQuoteAllowance = () => {
+    const nextUsage = publicQuoteUsage + 1;
+    setPublicQuoteUsage(nextUsage);
+    window.localStorage.setItem(PUBLIC_QUOTE_USAGE_KEY, String(nextUsage));
+    if (nextUsage >= PUBLIC_QUOTE_LIMIT) {
+      setShowLimitBanner(true);
+    }
+  };
+
   const handleSaveDraft = async () => {
+    if (!requireAccountForSaving()) {
+      return;
+    }
+    if (isPublicQuote) {
+      toast.info('Open the saved quote builder to store drafts in your account.');
+      navigate('/quotations/new');
+      return;
+    }
     if (!validateCustomTaxIds()) {
       return;
     }
@@ -279,6 +312,14 @@ export default function NewQuotation() {
   };
 
   const handleSend = async () => {
+    if (!requireAccountForSaving()) {
+      return;
+    }
+    if (isPublicQuote) {
+      toast.info('Open the saved quote builder to send quotations from your account.');
+      navigate('/quotations/new');
+      return;
+    }
     if (!validateCustomTaxIds()) {
       return;
     }
@@ -441,6 +482,10 @@ export default function NewQuotation() {
   };
 
   const handleDownloadPDF = () => {
+    if (isPublicLimitReached) {
+      setShowLimitBanner(true);
+      return;
+    }
     if (!validateCustomTaxIds()) {
       return;
     }
@@ -503,6 +548,9 @@ export default function NewQuotation() {
 
     generateQuotationPDF(quotation);
     toast.success('PDF downloaded successfully');
+    if (canUsePublicQuote) {
+      consumePublicQuoteAllowance();
+    }
   };
 
   const handleIssuerLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,6 +651,17 @@ export default function NewQuotation() {
   }, [user, isPublicQuote]);
 
   useEffect(() => {
+    if (!isPublicQuote) {
+      return;
+    }
+
+    const storedUsage = Number(window.localStorage.getItem(PUBLIC_QUOTE_USAGE_KEY) || '0');
+    const nextUsage = Number.isFinite(storedUsage) && storedUsage > 0 ? storedUsage : 0;
+    setPublicQuoteUsage(nextUsage);
+    setShowLimitBanner(nextUsage >= PUBLIC_QUOTE_LIMIT);
+  }, [isPublicQuote]);
+
+  useEffect(() => {
     let ignore = false;
     const fetchRate = async () => {
       if (currency === 'INR') {
@@ -643,7 +702,9 @@ export default function NewQuotation() {
               <div className="flex-1">
                 <h1 className="text-lg font-display font-bold text-foreground sm:text-2xl">New Quotation</h1>
                 <p className="text-xs text-muted-foreground sm:text-sm">
-                  No login required. Fill details and download instantly.
+                  {isPublicQuote
+                    ? 'No login required for up to 5 quotes. Sign in to save unlimited quotations.'
+                    : 'Create, save, and manage quotations in your account.'}
                 </p>
               </div>
             </div>
@@ -658,14 +719,20 @@ export default function NewQuotation() {
                   Send Quotation
                 </Button>
               )}
-              <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-                <Save className="w-4 h-4" />
-                Save Draft
-              </Button>
+              {user && !isPublicQuote ? (
+                <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+                  <Save className="w-4 h-4" />
+                  Save Draft
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => navigate('/signup', { state: { from: '/quotations/new' } })}>
+                  Sign up
+                </Button>
+              )}
               {isPublicQuote && (
                 <button
                   type="button"
-                  onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+                  onClick={() => navigate('/login', { state: { from: '/quotations/new' } })}
                   className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
                 >
                   Login
@@ -679,6 +746,55 @@ export default function NewQuotation() {
       {/* Content */}
       <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 pb-28 sm:pb-6">
         <div className="mx-auto max-w-7xl space-y-6">
+          {isPublicQuote && showLimitBanner ? (
+            <Card className="overflow-hidden border-amber-300/70 bg-gradient-to-r from-amber-50 via-orange-50 to-white shadow-lg">
+              <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/25">
+                    <LogIn className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-foreground sm:text-lg">Limit exceeded</p>
+                    <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                      You have used all 5 free public quotes. Sign up now to continue creating quotes, save your work,
+                      and manage multiple quotations in your account.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button variant="outline" onClick={() => navigate('/login', { state: { from: '/quotations/new' } })}>
+                    Log in
+                  </Button>
+                  <Button onClick={() => navigate('/signup', { state: { from: '/quotations/new' } })}>
+                    Sign up for more
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            isPublicQuote && (
+              <Card className="border-dashed border-primary/30 bg-primary/5">
+                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      Public mode: {publicQuotesRemaining} free quote{publicQuotesRemaining === 1 ? '' : 's'} left
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Create an account to save unlimited quotes, reuse client details, and keep a quote history.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button variant="outline" onClick={() => navigate('/login', { state: { from: '/quotations/new' } })}>
+                      Log in
+                    </Button>
+                    <Button onClick={() => navigate('/signup', { state: { from: '/quotations/new' } })}>
+                      Sign up
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          )}
           <div className="flex w-full flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">Label Style</p>
@@ -1399,17 +1515,18 @@ export default function NewQuotation() {
               Send
             </Button>
           )}
-          <Button className="flex-1" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
-            <Save className="w-4 h-4 mr-2" />
-            Draft
-          </Button>
-          {isPublicQuote && (
+          {user && !isPublicQuote ? (
+            <Button className="flex-1" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
+              <Save className="w-4 h-4 mr-2" />
+              Draft
+            </Button>
+          ) : (
             <Button
               className="flex-1"
               variant="ghost"
-              onClick={() => navigate('/login', { state: { from: '/dashboard' } })}
+              onClick={() => navigate('/signup', { state: { from: '/quotations/new' } })}
             >
-              Login
+              Sign up
             </Button>
           )}
         </div>

@@ -16,6 +16,7 @@ import Clients from "./pages/Clients";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import SetupPassword from "./pages/SetupPassword";
 import UserManagement from "./pages/UserManagement";
 import Setup from "./pages/Setup";
@@ -60,6 +61,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Navigate to="/quote" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/setup-password/:token" element={<SetupPassword />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

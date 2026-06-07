@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { COMPANY_INFO, DEFAULT_LINE_ITEMS, type LineItem, type Quotation } from '@/types/quotation';
@@ -81,7 +82,6 @@ export default function NewQuotation() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [publicQuoteUsage, setPublicQuoteUsage] = useState(0);
   const [showLimitBanner, setShowLimitBanner] = useState(false);
-  const [uxMode, setUxMode] = useState<'outside' | 'inline'>('outside');
   const isPublicQuote = location.pathname === '/quote';
   const canSendQuotation = Boolean(user) && !isPublicQuote;
   const canUsePublicQuote = !user && isPublicQuote;
@@ -125,6 +125,7 @@ export default function NewQuotation() {
   const [includeCompanyName, setIncludeCompanyName] = useState(true);
   const [includeGstin, setIncludeGstin] = useState(true);
   const [includeClientDetails, setIncludeClientDetails] = useState(true);
+  const [showCompanySection, setShowCompanySection] = useState(false);
   const [currency, setCurrency] = useState('INR');
   const [exchangeRate, setExchangeRate] = useState<number | null>(1);
   const [isRateLoading, setIsRateLoading] = useState(false);
@@ -133,9 +134,8 @@ export default function NewQuotation() {
   const clientLogoInputRef = useRef<HTMLInputElement | null>(null);
   const quoteDateInputRef = useRef<HTMLInputElement | null>(null);
   const validUntilInputRef = useRef<HTMLInputElement | null>(null);
-  const isInlineLabels = uxMode === 'inline';
-  const fieldSpaceClass = isInlineLabels ? 'space-y-1' : 'space-y-2';
-  const gridGapClass = isInlineLabels ? 'gap-3' : 'gap-4';
+  const fieldSpaceClass = 'space-y-2';
+  const gridGapClass = 'gap-4';
 
   // Line items start empty (single blank row)
   const [lineItems, setLineItems] = useState<FormLineItem[]>([
@@ -711,7 +711,7 @@ export default function NewQuotation() {
             <div className="hidden sm:flex sm:items-center sm:gap-2">
               <Button variant="accent" onClick={handleDownloadPDF}>
                 <Download className="w-4 h-4" />
-                Download PDF
+                Download Quote
               </Button>
               {canSendQuotation && (
                 <Button variant="default" onClick={handleSend} disabled={isSubmitting}>
@@ -795,71 +795,59 @@ export default function NewQuotation() {
               </Card>
             )
           )}
-          <div className="flex w-full flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">Label Style</p>
-              <p className="text-xs text-muted-foreground">Choose how field labels appear.</p>
-            </div>
-            <div className="inline-flex w-full rounded-md border border-border bg-muted/30 p-1 sm:w-auto">
-              <Button
-                type="button"
-                size="sm"
-                variant={uxMode === 'outside' ? 'default' : 'ghost'}
-                className="h-8 flex-1 sm:flex-none"
-                onClick={() => setUxMode('outside')}
-              >
-                Outside
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={uxMode === 'inline' ? 'default' : 'ghost'}
-                className="h-8 flex-1 sm:flex-none"
-                onClick={() => setUxMode('inline')}
-              >
-                Inline
-              </Button>
-            </div>
-          </div>
           {/* Company Details */}
-          <Card className="border-primary/20 bg-primary/5 shadow-sm">
-            <CardHeader className="border-b border-primary/10 bg-background/60">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="includeCompanyDetails"
-                  checked={includeCompanyName || includeGstin}
-                  onCheckedChange={(checked) => {
-                    const next = checked === true;
-                    setIncludeCompanyName(next);
-                    setIncludeGstin(next);
-                  }}
-                />
-                <CardTitle className="text-lg sm:text-xl">
-                  Company Details <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
-                </CardTitle>
-              </div>
-              <CardDescription className="text-sm text-muted-foreground">
-                Company branding and tax identity used on the quotation.
-              </CardDescription>
-            </CardHeader>
-            {(includeCompanyName || includeGstin) && (
-            <CardContent className="py-4 space-y-4">
-              <div className={`grid grid-cols-1 md:grid-cols-12 ${gridGapClass}`}>
+          <Accordion
+            type="single"
+            collapsible
+            value={showCompanySection ? 'company' : ''}
+            onValueChange={(value) => {
+              setShowCompanySection(value === 'company');
+            }}
+          >
+            <AccordionItem value="company" className="overflow-hidden rounded-lg border border-primary/20 bg-primary/5 shadow-sm">
+              <AccordionTrigger className="px-4 py-0 hover:no-underline">
+                <div className="flex flex-col items-start gap-1 text-left">
+                  <span className="text-lg font-semibold text-foreground">
+                    Company Details <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Company branding and tax identity used on the quotation.
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-1">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="includeCompanyDetails"
+                      checked={includeCompanyName || includeGstin}
+                      onCheckedChange={(checked) => {
+                        const next = checked === true;
+                        setIncludeCompanyName(next);
+                        setIncludeGstin(next);
+                      }}
+                    />
+                    <Label htmlFor="includeCompanyDetails" className="cursor-pointer">
+                      Include company branding and tax identity
+                    </Label>
+                  </div>
+                  {(includeCompanyName || includeGstin) && (
+                  <div className={`grid grid-cols-1 md:grid-cols-12 ${gridGapClass}`}>
                 <div className={`md:col-span-3 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="issuerCompanyName">Company Name</Label>}
+                  <Label htmlFor="issuerCompanyName">Company Name</Label>
                   <Input
                     id="issuerCompanyName"
-                    placeholder={isInlineLabels ? 'Company Name' : 'Enter company name'}
+                    placeholder="Enter company name"
                     value={issuerCompanyName}
                     onChange={(e) => setIssuerCompanyName(e.target.value)}
                   />
                 </div>
                 <div className={`md:col-span-3 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label>Primary Tax ID</Label>}
+                  <Label>Primary Tax ID</Label>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Select value={issuerTaxIdType || '__EMPTY__'} onValueChange={(value) => setIssuerTaxIdType(value === '__EMPTY__' ? '' : value)}>
                       <SelectTrigger className="w-full sm:w-[220px] whitespace-nowrap">
-                        <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
+                        <SelectValue placeholder="Select Tax ID Type" />
                       </SelectTrigger>
                       <SelectContent className="min-w-[220px]">
                         <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
@@ -873,7 +861,7 @@ export default function NewQuotation() {
                     </Select>
                     {issuerTaxIdType !== OTHER_TAX_ID_OPTION || issuerTaxIdCustomType.trim() ? (
                       <Input
-                        placeholder={isInlineLabels ? 'Tax ID Number' : 'Tax ID Number'}
+                        placeholder="Tax ID Number"
                         value={issuerTaxIdValue}
                         onChange={(e) => setIssuerTaxIdValue(e.target.value)}
                       />
@@ -886,12 +874,10 @@ export default function NewQuotation() {
                       onChange={(e) => setIssuerTaxIdCustomType(e.target.value)}
                     />
                   )}
-                  {!isInlineLabels && (
-                    <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
-                  )}
+                  <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="quoteDate">Quote Date</Label>}
+                  <Label htmlFor="quoteDate">Quote Date</Label>
                   <div className="relative">
                     <Input
                       id="quoteDate"
@@ -908,7 +894,7 @@ export default function NewQuotation() {
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="validUntil">Valid Till</Label>}
+                  <Label htmlFor="validUntil">Valid Till</Label>
                   <div className="relative">
                     <Input
                       id="validUntil"
@@ -927,16 +913,16 @@ export default function NewQuotation() {
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label htmlFor="quoteNumber">Quotation No</Label>}
+                  <Label htmlFor="quoteNumber">Quotation No</Label>
                   <Input
                     id="quoteNumber"
-                    placeholder={isInlineLabels ? 'Quotation No' : undefined}
+                    placeholder="Quotation No"
                     value={quoteNumber}
                     onChange={(e) => setQuoteNumber(e.target.value)}
                   />
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label>Company Logo</Label>}
+                  <Label>Company Logo</Label>
                   <div className="flex items-center gap-2">
                     <input
                       ref={issuerLogoInputRef}
@@ -957,7 +943,7 @@ export default function NewQuotation() {
                   </div>
                 </div>
                 <div className={`md:col-span-2 ${fieldSpaceClass}`}>
-                  {!isInlineLabels && <Label>Authorized Signature</Label>}
+                  <Label>Authorized Signature</Label>
                   <div className="flex items-center gap-2">
                     <input
                       ref={issuerSignatureInputRef}
@@ -977,256 +963,250 @@ export default function NewQuotation() {
                     )}
                   </div>
                 </div>
-              </div>
-            </CardContent>
-            )}
-          </Card>
+                  </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Left Column - Form */}
             <div className="order-1 lg:col-span-2 space-y-6">
               {/* Client Details */}
-              <Card className="shadow-sm">
-                <CardHeader className="border-b border-border/60 bg-muted/30">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="includeClientDetails"
-                        checked={includeClientDetails}
-                        onCheckedChange={(checked) => setIncludeClientDetails(checked === true)}
-                      />
-                      <CardTitle className="text-lg sm:text-xl">
+              <Accordion
+                type="single"
+                collapsible
+                value={includeClientDetails ? 'client' : ''}
+                onValueChange={(value) => {
+                  setIncludeClientDetails(value === 'client');
+                }}
+              >
+                <AccordionItem value="client" className="overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm">
+                  <AccordionTrigger className="px-4 py-0 hover:no-underline">
+                    <div className="flex flex-col items-start gap-1 text-left">
+                      <span className="text-lg font-semibold text-foreground">
                         Client Details <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
-                      </CardTitle>
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        Enter the client information for this quotation.
+                      </span>
                     </div>
-                  </div>
-                  {!isInlineLabels && (
-                    <CardDescription className="text-sm text-muted-foreground">
-                      Enter the client information for this quotation.
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                {includeClientDetails && (
-                  <CardContent className="space-y-4">
-                    <div className={`grid grid-cols-1 md:grid-cols-2 ${gridGapClass}`}>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="clientSelect">Select Existing Client</Label>}
-                        <Select
-                          value={selectedClientId || 'none'}
-                          onValueChange={handleClientSelect}
-                          disabled={isClientsLoading}
-                        >
-                          <SelectTrigger id="clientSelect">
-                            <SelectValue placeholder={isClientsLoading ? 'Loading clients...' : 'Choose a client'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {clients.map((client) => (
-                              <SelectItem key={client._id} value={client._id}>
-                                {client.name} {client.companyName ? `• ${client.companyName}` : ''}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {isClientsLoading && (
-                          <p className="text-xs text-muted-foreground">Loading client list...</p>
-                        )}
-                      </div>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="clientName">Client Name</Label>}
-                        <Input
-                          id="clientName"
-                          placeholder={isInlineLabels ? 'Client Name' : 'Enter client name'}
-                          value={clientName}
-                          onChange={(e) => setClientName(e.target.value)}
-                        />
-                      </div>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="companyName">Company Name</Label>}
-                        <Input
-                          id="companyName"
-                          placeholder={isInlineLabels ? 'Company Name' : 'Enter company name'}
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                        />
-                      </div>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="contactNumber">Contact Number</Label>}
-                        <Input
-                          id="contactNumber"
-                          placeholder={isInlineLabels ? 'Contact Number' : '+91 XXXXX XXXXX'}
-                          value={contactNumber}
-                          onChange={(e) => setContactNumber(e.target.value)}
-                        />
-                      </div>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="email">Email</Label>}
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder={isInlineLabels ? 'Email' : 'client@company.com'}
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                        />
-                      </div>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="taxIdName">Primary Tax ID Name</Label>}
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-4 pt-1">
+                      <div className={`grid grid-cols-1 md:grid-cols-2 ${gridGapClass}`}>
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="clientSelect">Select Existing Client</Label>
                           <Select
-                            value={taxIdName || '__EMPTY__'}
-                            onValueChange={(value) => setTaxIdName(value === '__EMPTY__' ? '' : value)}
+                            value={selectedClientId || 'none'}
+                            onValueChange={handleClientSelect}
+                            disabled={isClientsLoading}
                           >
-                            <SelectTrigger id="taxIdName" className="w-full sm:w-[220px] whitespace-nowrap">
-                              <SelectValue placeholder={isInlineLabels ? 'Tax ID Type' : 'Select Tax ID Type'} />
+                            <SelectTrigger id="clientSelect">
+                              <SelectValue placeholder={isClientsLoading ? 'Loading clients...' : 'Choose a client'} />
                             </SelectTrigger>
-                            <SelectContent className="min-w-[220px]">
-                              <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
-                              {TAX_ID_TYPE_OPTIONS.map((item) => (
-                                <SelectItem key={item} value={item}>
-                                  {item}
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {clients.map((client) => (
+                                <SelectItem key={client._id} value={client._id}>
+                                  {client.name} {client.companyName ? `• ${client.companyName}` : ''}
                                 </SelectItem>
                               ))}
-                              <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
                             </SelectContent>
                           </Select>
-                          {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
-                            <Input
-                              id="taxIdValue"
-                              placeholder={isInlineLabels ? 'Tax ID Number' : 'Tax ID Number'}
-                              value={taxIdValue}
-                              onChange={(e) => setTaxIdValue(e.target.value)}
-                            />
-                          ) : null}
+                          {isClientsLoading && (
+                            <p className="text-xs text-muted-foreground">Loading client list...</p>
+                          )}
                         </div>
-                        {taxIdName === OTHER_TAX_ID_OPTION && (
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="clientName">Client Name</Label>
                           <Input
-                            placeholder="Specify Tax ID Type"
-                            value={clientTaxIdCustomType}
-                            onChange={(e) => setClientTaxIdCustomType(e.target.value)}
+                            id="clientName"
+                            placeholder="Enter client name"
+                            value={clientName}
+                            onChange={(e) => setClientName(e.target.value)}
                           />
-                        )}
-                        {!isInlineLabels && (
-                          <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
-                        )}
-                      </div>
-                      <div className={fieldSpaceClass}>
-                        {!isInlineLabels && <Label htmlFor="clientReferenceNo">Client PO / Reference No.</Label>}
-                        <Input
-                          id="clientReferenceNo"
-                          placeholder={isInlineLabels ? 'Client PO / Reference No.' : 'Optional - provided by client if available'}
-                          value={clientReferenceNo}
-                          onChange={(e) => setClientReferenceNo(e.target.value)}
-                        />
-                      </div>
-                      <div className={`${fieldSpaceClass} md:col-span-2`}>
-                        {!isInlineLabels && <Label htmlFor="clientAddress">Client Address</Label>}
-                        <Textarea
-                          id="clientAddress"
-                          placeholder={isInlineLabels ? 'Client Address' : 'Enter client address'}
-                          value={clientAddress}
-                          onChange={(e) => setClientAddress(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <div className="md:col-span-2 flex justify-start md:justify-end">
-                        <input
-                          ref={clientLogoInputRef}
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg,image/webp"
-                          className="hidden"
-                          onChange={handleClientLogoSelect}
-                        />
-                        <Button type="button" variant="outline" onClick={() => clientLogoInputRef.current?.click()}>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload Client Logo
-                        </Button>
-                      </div>
-                      {clientLogoFile && (
-                        <div className="md:col-span-2 text-right text-xs text-muted-foreground">
-                          {clientLogoFile.name}
                         </div>
-                      )}
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="companyName">Company Name</Label>
+                          <Input
+                            id="companyName"
+                            placeholder="Enter company name"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                          />
+                        </div>
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="contactNumber">Contact Number</Label>
+                          <Input
+                            id="contactNumber"
+                            placeholder="+91 XXXXX XXXXX"
+                            value={contactNumber}
+                            onChange={(e) => setContactNumber(e.target.value)}
+                          />
+                        </div>
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="client@company.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                          />
+                        </div>
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="taxIdName">Primary Tax ID Name</Label>
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <Select
+                              value={taxIdName || '__EMPTY__'}
+                              onValueChange={(value) => setTaxIdName(value === '__EMPTY__' ? '' : value)}
+                            >
+                              <SelectTrigger id="taxIdName" className="w-full sm:w-[220px] whitespace-nowrap">
+                                <SelectValue placeholder="Select Tax ID Type" />
+                              </SelectTrigger>
+                              <SelectContent className="min-w-[220px]">
+                                <SelectItem value="__EMPTY__">Select Tax ID Type</SelectItem>
+                                {TAX_ID_TYPE_OPTIONS.map((item) => (
+                                  <SelectItem key={item} value={item}>
+                                    {item}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value={OTHER_TAX_ID_OPTION}>Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {taxIdName !== OTHER_TAX_ID_OPTION || clientTaxIdCustomType.trim() ? (
+                              <Input
+                                id="taxIdValue"
+                                placeholder="Tax ID Number"
+                                value={taxIdValue}
+                                onChange={(e) => setTaxIdValue(e.target.value)}
+                              />
+                            ) : null}
+                          </div>
+                          {taxIdName === OTHER_TAX_ID_OPTION && (
+                            <Input
+                              placeholder="Specify Tax ID Type"
+                              value={clientTaxIdCustomType}
+                              onChange={(e) => setClientTaxIdCustomType(e.target.value)}
+                            />
+                          )}
+                          <p className="text-xs text-muted-foreground">GST, VAT, EIN, or local business tax number</p>
+                        </div>
+                        <div className={fieldSpaceClass}>
+                          <Label htmlFor="clientReferenceNo">Client PO / Reference No.</Label>
+                          <Input
+                            id="clientReferenceNo"
+                            placeholder="Optional - provided by client if available"
+                            value={clientReferenceNo}
+                            onChange={(e) => setClientReferenceNo(e.target.value)}
+                          />
+                        </div>
+                        <div className={`${fieldSpaceClass} md:col-span-2`}>
+                          <Label htmlFor="clientAddress">Client Address</Label>
+                          <Textarea
+                            id="clientAddress"
+                            placeholder="Enter client address"
+                            value={clientAddress}
+                            onChange={(e) => setClientAddress(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        <div className="md:col-span-2 flex justify-start md:justify-end">
+                          <input
+                            ref={clientLogoInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className="hidden"
+                            onChange={handleClientLogoSelect}
+                          />
+                          <Button type="button" variant="outline" onClick={() => clientLogoInputRef.current?.click()}>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Client Logo
+                          </Button>
+                        </div>
+                        {clientLogoFile && (
+                          <div className="md:col-span-2 text-right text-xs text-muted-foreground">
+                            {clientLogoFile.name}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </CardContent>
-                )}
-              </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               {/* Tax (Optional) */}
-              <Card className="shadow-sm">
-                <CardHeader className="border-b border-border/60 bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="showTaxSection"
-                      checked={showTaxSection}
-                      onCheckedChange={(checked) => {
-                        const next = checked === true;
-                        setShowTaxSection(next);
-                        if (!next) setIncludeTax(false);
-                      }}
-                    />
-                    <CardTitle>
-                      <Label htmlFor="showTaxSection" className="cursor-pointer">
-                        Taxes (Optional)
-                      </Label>
-                    </CardTitle>
-                  </div>
-                <CardDescription>Select GST or Tax and set the percentage.</CardDescription>
-                </CardHeader>
-                {showTaxSection && (
-                <CardContent className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="includeTax"
-                      checked={includeTax}
-                      onCheckedChange={(checked) => setIncludeTax(checked === true)}
-                    />
-                    <Label htmlFor="includeTax" className="text-sm cursor-pointer">
-                      Enable Tax
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isInlineLabels && (
-                      <Label htmlFor="taxType" className="text-sm text-muted-foreground">
-                        Type
-                      </Label>
-                    )}
-                    <Select
-                      value={taxType}
-                      onValueChange={(value) => setTaxType(value as 'GST' | 'TAX')}
-                      disabled={!includeTax}
-                    >
-                      <SelectTrigger id="taxType" className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="GST">GST</SelectItem>
-                        <SelectItem value="TAX">Tax</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isInlineLabels && (
-                      <Label htmlFor="taxRate" className="text-sm text-muted-foreground">
-                        Rate
-                      </Label>
-                    )}
-                    <Input
-                      id="taxRate"
-                      type="number"
-                      className="w-20"
-                      placeholder={isInlineLabels ? 'Rate %' : undefined}
-                      value={taxRate}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setTaxRate(value === '' ? '' : parseInt(value, 10) || 0);
-                      }}
-                      disabled={!includeTax}
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
-                  </div>
-                </CardContent>
-                )}
-              </Card>
+              <Accordion
+                type="single"
+                collapsible
+                value={showTaxSection ? 'taxes' : ''}
+                onValueChange={(value) => {
+                  const next = value === 'taxes';
+                  setShowTaxSection(next);
+                  if (!next) setIncludeTax(false);
+                }}
+              >
+                <AccordionItem value="taxes" className="overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm">
+                  <AccordionTrigger className="px-4 py-0 hover:no-underline">
+                    <div className="flex flex-col items-start gap-1 text-left">
+                      <span className="text-lg font-semibold text-foreground">Taxes (Optional)</span>
+                      <span className="text-sm text-muted-foreground">Select GST or Tax and set the percentage.</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="includeTax"
+                          checked={includeTax}
+                          onCheckedChange={(checked) => setIncludeTax(checked === true)}
+                        />
+                        <Label htmlFor="includeTax" className="text-sm cursor-pointer">
+                          Enable Tax
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="taxType" className="text-sm text-muted-foreground">
+                          Type
+                        </Label>
+                        <Select
+                          value={taxType}
+                          onValueChange={(value) => setTaxType(value as 'GST' | 'TAX')}
+                          disabled={!includeTax}
+                        >
+                          <SelectTrigger id="taxType" className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="GST">GST</SelectItem>
+                            <SelectItem value="TAX">Tax</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="taxRate" className="text-sm text-muted-foreground">
+                          Rate
+                        </Label>
+                        <Input
+                          id="taxRate"
+                          type="number"
+                          className="w-20"
+                          placeholder="Rate %"
+                          value={taxRate}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setTaxRate(value === '' ? '' : parseInt(value, 10) || 0);
+                          }}
+                          disabled={!includeTax}
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               {/* Line Items */}
               <Card className="shadow-sm">
@@ -1303,29 +1283,21 @@ export default function NewQuotation() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          {!isInlineLabels && <Label>Service Name</Label>}
-                          {isInlineLabels && item.service && (
-                            <p className="text-xs text-muted-foreground">Service Name</p>
-                          )}
+                          <Label>Service Name</Label>
                           <Input
-                            placeholder={isInlineLabels ? 'Service Name' : 'e.g., Website Design'}
+                            placeholder="e.g., Website Design"
                             value={item.service}
                             onChange={(e) => updateLineItem(item.id, 'service', e.target.value)}
                           />
                         </div>
                         <div className="space-y-2">
-                          {!isInlineLabels && <Label>{`Amount (${currency})`}</Label>}
-                          {isInlineLabels && (item.isFree || item.price > 0) && (
-                            <p className="text-xs text-muted-foreground">{`Amount (${currency})`}</p>
-                          )}
+                          <Label>{`Amount (${currency})`}</Label>
                           <Input
                             type="number"
                             placeholder={
                               currency !== 'INR' && exchangeRate === null
                                 ? 'Rate loading...'
-                                : isInlineLabels
-                                  ? `Amount (${currency})`
-                                  : '0'
+                                : '0'
                             }
                             value={item.isFree ? '' : (currency !== 'INR' && exchangeRate !== null
                               ? Math.round(toBillingAmount(item.price))
@@ -1342,12 +1314,9 @@ export default function NewQuotation() {
                           />
                         </div>
                         <div className="md:col-span-2 space-y-2">
-                          {!isInlineLabels && <Label>Description</Label>}
-                          {isInlineLabels && item.description && (
-                            <p className="text-xs text-muted-foreground">Description</p>
-                          )}
+                          <Label>Description</Label>
                           <Textarea
-                            placeholder={isInlineLabels ? 'Description' : "Add details (auto-bulleted):\n- "}
+                            placeholder="Add details (auto-bulleted):\n- "
                             value={item.description}
                             onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
                             onFocus={(e) => handleDescriptionFocus(item.id, e)}
@@ -1407,9 +1376,7 @@ export default function NewQuotation() {
 
                   {/* Currency */}
                   <div className="flex items-center justify-between gap-4">
-                    {!isInlineLabels && (
-                      <Label className="text-sm text-muted-foreground">Billing Currency</Label>
-                    )}
+                    <Label className="text-sm text-muted-foreground">Billing Currency</Label>
                     <Select value={currency} onValueChange={setCurrency}>
                       <SelectTrigger className="h-8 w-[170px] text-sm">
                         <SelectValue placeholder="Select currency" />
@@ -1497,6 +1464,12 @@ export default function NewQuotation() {
                   </div>
                 </CardContent>
               </Card>
+              <div className="hidden justify-end sm:flex">
+                <Button variant="accent" onClick={handleDownloadPDF}>
+                  <Download className="w-4 h-4" />
+                  Download Quote
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -1507,7 +1480,7 @@ export default function NewQuotation() {
         <div className="px-4 py-3 flex items-center gap-2">
           <Button className="flex-1" variant="accent" onClick={handleDownloadPDF}>
             <Download className="w-4 h-4 mr-2" />
-            PDF
+            Download Quote
           </Button>
           {canSendQuotation && (
             <Button className="flex-1" variant="default" onClick={handleSend} disabled={isSubmitting}>
@@ -1534,4 +1507,5 @@ export default function NewQuotation() {
     </div>
   );
 }
+
 

@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (status === 401) {
                 message = 'Invalid email or password';
             } else if (status === 404) {
-                message = 'Login API not found. Check VITE_API_URL (should point to your backend /api).';
+                message = 'Login API not found. Check VITE_API_URL (it should point to your backend /api).';
             }
 
             toast.error(message);
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 (error.request ? 'Cannot reach the backend API. Check the deployed backend URL and redeploy the frontend.' : 'Signup failed');
 
             if (status === 404) {
-                message = 'Signup API not found. Check the backend URL or Vercel proxy configuration.';
+                message = 'Signup API not found. Check VITE_API_URL (it should point to your backend /api).';
             }
 
             console.error('Signup failed debug:', {

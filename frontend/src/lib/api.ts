@@ -4,8 +4,10 @@ const isLocalhost =
     typeof window !== 'undefined' &&
     /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
 
+const productionApiUrl = import.meta.env.VITE_API_URL?.trim();
+
 const api = axios.create({
-    baseURL: isLocalhost ? 'http://localhost:5000/api' : '/api',
+    baseURL: isLocalhost ? 'http://localhost:5000/api' : productionApiUrl || '/api',
     headers: {
         'Content-Type': 'application/json',
     },

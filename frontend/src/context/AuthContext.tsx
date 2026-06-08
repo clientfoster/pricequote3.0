@@ -6,6 +6,7 @@ interface User {
     _id: string;
     name: string;
     email: string;
+    phoneNumber?: string;
     role: 'SuperAdmin' | 'Employee';
     profileImage?: string;
     token: string;
@@ -13,10 +14,18 @@ interface User {
     tenantName?: string;
 }
 
+interface SignupPayload {
+    name: string;
+    phoneNumber: string;
+    secondaryEmail: string;
+    password: string;
+    companyName?: string;
+}
+
 interface AuthContextType {
     user: User | null;
-    login: (email: string, password: string) => Promise<void>;
-    signup: (name: string, email: string, password: string, companyName?: string) => Promise<void>;
+    login: (identifier: string, password: string) => Promise<void>;
+    signup: (payload: SignupPayload) => Promise<void>;
     logout: () => void;
     updateProfile: (data: FormData) => Promise<void>;
     isLoading: boolean;
@@ -36,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (identifier: string, password: string) => {
         try {
-            const normalizedEmail = email.trim().toLowerCase();
-            const { data } = await api.post('/auth/login', { email: normalizedEmail, password });
+            const normalizedIdentifier = identifier.trim();
+            const { data } = await api.post('/auth/login', { identifier: normalizedIdentifier, password });
             setUser(data);
             localStorage.setItem('userInfo', JSON.stringify(data));
             toast.success('Login successful');
@@ -50,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 (error.request ? 'Cannot reach backend API. Check backend server/CORS.' : 'Login failed');
 
             if (status === 401) {
-                message = 'Invalid email or password';
+                message = 'Invalid email, phone number, or password';
             } else if (status === 404) {
                 message = 'Login API not found. Check VITE_API_URL (it should point to your backend /api).';
             }
@@ -60,12 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const signup = async (name: string, email: string, password: string, companyName?: string) => {
+    const signup = async ({ name, phoneNumber, secondaryEmail, password, companyName }: SignupPayload) => {
         try {
-            const normalizedEmail = email.trim().toLowerCase();
+            const normalizedSecondaryEmail = secondaryEmail.trim().toLowerCase();
+            const normalizedPhoneNumber = phoneNumber.trim();
             const { data } = await api.post('/auth/register', {
                 name: name.trim(),
-                email: normalizedEmail,
+                phoneNumber: normalizedPhoneNumber,
+                secondaryEmail: normalizedSecondaryEmail,
                 password,
                 companyName: companyName?.trim(),
             });

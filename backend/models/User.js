@@ -11,6 +11,10 @@ const userSchema = mongoose.Schema({
         type: String,
         required: true,
     },
+    phoneNumber: {
+        type: String,
+        trim: true,
+    },
     email: {
         type: String,
         required: true,
@@ -50,6 +54,7 @@ const userSchema = mongoose.Schema({
 });
 
 userSchema.index({ tenantId: 1, email: 1 }, { unique: true });
+userSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
     if (!this.password) return false;

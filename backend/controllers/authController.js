@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const normalizePhoneNumber = (phoneNumber) => String(phoneNumber || '').trim().replace(/[^\d+]/g, '');
 const getTenantName = async (tenantId) => {
     if (!tenantId) return undefined;
     const tenant = await Tenant.findById(tenantId);
@@ -17,10 +18,20 @@ const getTenantName = async (tenantId) => {
 // @route   POST /api/auth/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    const normalizedEmail = normalizeEmail(email);
+    const { identifier, email, password } = req.body;
+    const normalizedEmail = normalizeEmail(identifier || email);
+    const normalizedPhoneNumber = normalizePhoneNumber(identifier || email);
+    const lookup = [];
 
-    const user = await User.findOne({ email: normalizedEmail });
+    if (normalizedEmail) {
+        lookup.push({ email: normalizedEmail });
+    }
+
+    if (normalizedPhoneNumber) {
+        lookup.push({ phoneNumber: normalizedPhoneNumber });
+    }
+
+    const user = await User.findOne(lookup.length ? { $or: lookup } : { email: normalizedEmail });
 
     if (user && (await user.matchPassword(password))) {
         const tenantName = await getTenantName(user.tenantId);
@@ -28,6 +39,7 @@ const authUser = asyncHandler(async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            phoneNumber: user.phoneNumber,
             role: user.role,
             profileImage: user.profileImage,
             tenantId: user.tenantId,
@@ -79,7 +91,7 @@ const acceptInvite = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/setup
 // @access  Public
 const setupSuperAdmin = asyncHandler(async (req, res) => {
-    const { name, email, password, companyName } = req.body;
+    const { name, email, password, companyName, phoneNumber } = req.body;
     const normalizedEmail = normalizeEmail(email);
     const tenant = await Tenant.create({
         name: companyName || `${name}'s Company`,
@@ -89,6 +101,7 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
         tenantId: tenant._id,
         name,
         email: normalizedEmail,
+        phoneNumber: phoneNumber ? normalizePhoneNumber(phoneNumber) : undefined,
         password,
         role: 'SuperAdmin',
         isVerified: true, // Auto verify since they are setting it up
@@ -99,6 +112,7 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            phoneNumber: user.phoneNumber,
             role: user.role,
             profileImage: user.profileImage,
             tenantId: user.tenantId,
@@ -115,18 +129,24 @@ const setupSuperAdmin = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password, companyName } = req.body;
-    const normalizedEmail = normalizeEmail(email);
+    const { name, email, secondaryEmail, password, companyName, phoneNumber } = req.body;
+    const normalizedEmail = normalizeEmail(secondaryEmail || email);
+    const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
 
-    if (!name || !normalizedEmail || !password) {
+    if (!name || !normalizedEmail || !normalizedPhoneNumber || !password) {
         res.status(400);
-        throw new Error('Name, email, and password are required');
+        throw new Error('Name, phone number, email, and password are required');
     }
 
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingLookup = [{ email: normalizedEmail }];
+    if (normalizedPhoneNumber) {
+        existingLookup.push({ phoneNumber: normalizedPhoneNumber });
+    }
+
+    const existingUser = await User.findOne({ $or: existingLookup });
     if (existingUser) {
         res.status(400);
-        throw new Error('An account with this email already exists');
+        throw new Error('An account with this email or phone number already exists');
     }
 
     const tenant = await Tenant.create({
@@ -137,6 +157,7 @@ const registerUser = asyncHandler(async (req, res) => {
         tenantId: tenant._id,
         name,
         email: normalizedEmail,
+        phoneNumber: normalizedPhoneNumber,
         password,
         role: 'SuperAdmin',
         isVerified: true,
@@ -151,6 +172,7 @@ const registerUser = asyncHandler(async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        phoneNumber: user.phoneNumber,
         role: user.role,
         profileImage: user.profileImage,
         tenantId: user.tenantId,

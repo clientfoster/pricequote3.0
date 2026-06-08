@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 export default function Login() {
-    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function Login() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await login(email, password);
+            await login(identifier, password);
             navigate(from, { replace: true });
         } catch (error) {
             // Error handled in context
@@ -34,13 +34,13 @@ export default function Login() {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="identifier">Email or phone number</Label>
                             <Input
-                                id="email"
-                                type="email"
-                                placeholder="m@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                id="identifier"
+                                type="text"
+                                placeholder="m@example.com or +91 9876543210"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
                                 required
                             />
                         </div>

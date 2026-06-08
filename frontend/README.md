@@ -60,6 +60,17 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Required environment variables
+
+For production auth, the frontend expects these variables:
+
+- `VITE_API_URL` for the backend API base URL, for example `https://your-backend.vercel.app/api`
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID` if your Firebase project uses Analytics
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.

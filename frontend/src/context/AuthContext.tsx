@@ -73,7 +73,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('userInfo', JSON.stringify(data));
             toast.success('Account created successfully');
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Signup failed';
+            const status = error.response?.status;
+            let message =
+                error.response?.data?.message ||
+                (error.request ? 'Cannot reach the backend API. Check the deployed backend URL and redeploy the frontend.' : 'Signup failed');
+
+            if (status === 404) {
+                message = 'Signup API not found. Check the backend URL or Vercel proxy configuration.';
+            }
+
+            console.error('Signup failed debug:', {
+                status,
+                url: error.config?.url,
+                baseURL: error.config?.baseURL,
+                responseData: error.response?.data,
+                requestUrl: error.request?.responseURL,
+            });
             toast.error(message);
             throw error;
         }
